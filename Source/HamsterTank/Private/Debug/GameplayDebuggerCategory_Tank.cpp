@@ -1,18 +1,18 @@
 ﻿
 
-#include "Debug/GameplayDebuggerCategory_Player.h"
+#include "Debug/GameplayDebuggerCategory_Tank.h"
 
 #if WITH_GAMEPLAY_DEBUGGER
 #include "TankBase.h"
 
-FGameplayDebuggerCategory_Player::FGameplayDebuggerCategory_Player()
+FGameplayDebuggerCategory_Tank::FGameplayDebuggerCategory_Tank()
 {
 	bShowOnlyWithDebugActor = false;
 	SetDataPackReplication(&DataPack);
 	//can be extended to show a certain pawn, but not sure if necessary... see AI Category
 }
 
-void FGameplayDebuggerCategory_Player::CollectData(APlayerController* OwnerPC, AActor* DebugActor)
+void FGameplayDebuggerCategory_Tank::CollectData(APlayerController* OwnerPC, AActor* DebugActor)
 {
 	bool bFallback = false;
 	TWeakObjectPtr<ATankBase> Tank = Cast<ATankBase>(DebugActor);
@@ -40,7 +40,7 @@ void FGameplayDebuggerCategory_Player::CollectData(APlayerController* OwnerPC, A
 	
 }
 
-void FGameplayDebuggerCategory_Player::DrawData(APlayerController* OwnerPC,
+void FGameplayDebuggerCategory_Tank::DrawData(APlayerController* OwnerPC,
 	FGameplayDebuggerCanvasContext& CanvasContext)
 {
 	if(DataPack.bWasFallBackToPCPawn)
@@ -51,8 +51,8 @@ void FGameplayDebuggerCategory_Player::DrawData(APlayerController* OwnerPC,
 	CanvasContext.Printf(TEXT("{green}Name: {yellow}%s"), *DataPack.ActorName);
 	CanvasContext.Printf(TEXT("{green}Current Driving State: {yellow}%s"), *UEnum::GetValueAsString(DataPack.DrivingState));
 	CanvasContext.Printf(TEXT("{green}Current Velocity Direction {yellow}%s"), *DataPack.VelocityDirection.ToString());
-	CanvasContext.Printf(TEXT("{green}Current Speed: {yellow}%f cm/s"), DataPack.CurrentSpeed);
-	CanvasContext.Printf(TEXT("{green}Current Max Speed {yellow}%f cm/s"), DataPack.CurrentMaxSpeed);
+	CanvasContext.Printf(TEXT("{green}Current Speed: {yellow}%f m/s"), DataPack.CurrentSpeed);
+	CanvasContext.Printf(TEXT("{green}Current Max Speed {yellow}%f m/s"), DataPack.CurrentMaxSpeed);
 	CanvasContext.Printf(TEXT("{green}Is Sliding? {yellow}%s"), DataPack.bIsSliding ? *FString("true") : *FString("false"));
 	if(DataPack.bIsSliding)
 	{
@@ -61,12 +61,12 @@ void FGameplayDebuggerCategory_Player::DrawData(APlayerController* OwnerPC,
 	
 }
 
-TSharedRef<FGameplayDebuggerCategory> FGameplayDebuggerCategory_Player::MakeInstance()
+TSharedRef<FGameplayDebuggerCategory> FGameplayDebuggerCategory_Tank::MakeInstance()
 {
-	return MakeShareable(new FGameplayDebuggerCategory_Player());
+	return MakeShareable(new FGameplayDebuggerCategory_Tank());
 }
 
-void FGameplayDebuggerCategory_Player::FRepData::Serialize(FArchive& Ar)
+void FGameplayDebuggerCategory_Tank::FRepData::Serialize(FArchive& Ar)
 {
 	Ar << ActorName;
 	Ar << DrivingState;

@@ -328,7 +328,7 @@ void UTankMovementComponent::SetBackwardDrivingValues()
 void UTankMovementComponent::SetBreakingDrivingValues()
 {
 	CurrentMaxSpeed = ForwardMaxSpeed;
-	const float InBreakingDistance = BreakingDistance * ( Velocity.Size() / ForwardMaxSpeed);
+	const float InBreakingDistance = (BreakingDistance / 100) * ( Velocity.Size() / ForwardMaxSpeed);
 	const float BreakingAcceleration = Velocity.SizeSquared() / (2 * InBreakingDistance);
 	CurrentDrivingForce = Mass * BreakingAcceleration;
 }
@@ -431,7 +431,7 @@ void UTankMovementComponent::ProcessUserDesiredRotation(float InDeltaTime)
 	else
 	{
 		const float DeltaLocation = FVector::DotProduct(PawnOwner->GetActorForwardVector(), Velocity) * InDeltaTime;
-		const float RotationAngle =  DeltaLocation / MinTurningRadius * GetPendingInputVector().Y;
+		const float RotationAngle = DeltaLocation / MinTurningRadius * GetPendingInputVector().Y;
 		RotationDelta = FQuat(PawnOwner->GetActorUpVector(), RotationAngle);
 
 #if ENABLE_DRAW_DEBUG && !NO_CVARS

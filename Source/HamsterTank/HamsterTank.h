@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #if WITH_GAMEPLAY_DEBUGGER
 #include "GameplayDebugger.h"
-#include "Debug/GameplayDebuggerCategory_Player.h"
+#include "Public\Debug\GameplayDebuggerCategory_Tank.h"
 #endif // WITH_GAMEPLAY_DEBUGGER
 class FHamsterTankModule : public IModuleInterface
 {

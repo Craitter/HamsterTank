@@ -11,7 +11,7 @@ void FHamsterTankModule::StartupModule()
 
 #if WITH_GAMEPLAY_DEBUGGER
 	IGameplayDebugger& GameplayDebuggerModule = IGameplayDebugger::Get();
-	GameplayDebuggerModule.RegisterCategory("Player", IGameplayDebugger::FOnGetCategory::CreateStatic(&FGameplayDebuggerCategory_Player::MakeInstance));
+	GameplayDebuggerModule.RegisterCategory("Tank", IGameplayDebugger::FOnGetCategory::CreateStatic(&FGameplayDebuggerCategory_Tank::MakeInstance));
 	GameplayDebuggerModule.NotifyCategoriesChanged();
 #endif // WITH_GAMEPLAY_DEBUGGER
 }
@@ -22,7 +22,7 @@ void FHamsterTankModule::ShutdownModule()
 	if (IGameplayDebugger::IsAvailable())
 	{
 		IGameplayDebugger& GameplayDebuggerModule = IGameplayDebugger::Get();
-		GameplayDebuggerModule.UnregisterCategory("Player");
+		GameplayDebuggerModule.UnregisterCategory("Tank");
 		GameplayDebuggerModule.NotifyCategoriesChanged();
 	}
 #endif // WITH_GAMEPLAY_DEBUGGER

@@ -29,10 +29,6 @@ class HAMSTERTANK_API UTankMovementComponent : public UPawnMovementComponent
 	GENERATED_BODY()
 
 public:
-	//Todo: make it cm per second for entering values
-	//Todo: Make BlueprintFunctions for useful Members/Functions
-	//Todo: Debug:, , PrintVelocityDirection, MaxSpeed, CurrentSpeed, DrivingState, Sliding?, ,  Restistances 
-
 	UTankMovementComponent();
 	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -77,8 +73,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Physics", meta=(ClampMin="1.0", UIMin="1.0", ForceUnits="m/ss"))
 	float BackwardConstantAcceleration = 10.0f;
 	// this is the Distance the tank will move before standing on MaxSpeed, it is constant (Ratio = Velocity/MaxSpeed ==== CurrentBreakingDistance = BreakingDistance * Ratio)
-	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Physics", meta=(ClampMin="1.0", UIMin="1.0", ForceUnits="m"))
-	float BreakingDistance = 10.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Physics", meta=(ClampMin="1.0", UIMin="1.0", ForceUnits="cm"))
+	float BreakingDistance = 1000.0f;
 
 	//The highest possible speed when driving forward Default Value = 60Km/h / 3.6 = 16.66667
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Speed", meta = (ClampMin="1.0", UIMin="1.0", ForceUnits="m/s"))

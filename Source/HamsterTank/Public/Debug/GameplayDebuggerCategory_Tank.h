@@ -15,10 +15,10 @@ class AActor;
 //resources:
 //https://unrealcommunity.wiki/extending-gameplay-debugger-lcudh8ot
 //https://forums.unrealengine.com/t/quick-c-tip-overriding-your-games-startupmodule-shutdownmodule-functions/118315
-class FGameplayDebuggerCategory_Player : public FGameplayDebuggerCategory
+class FGameplayDebuggerCategory_Tank : public FGameplayDebuggerCategory
 {
 public:
-	FGameplayDebuggerCategory_Player();
+	FGameplayDebuggerCategory_Tank();
 	virtual void CollectData(APlayerController* OwnerPC, AActor* DebugActor) override;
 
 	virtual void DrawData(APlayerController* OwnerPC, FGameplayDebuggerCanvasContext& CanvasContext) override;
