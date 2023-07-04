@@ -84,3 +84,63 @@ TWeakObjectPtr<UTankMovementComponent> ATankBase::GetTankMovement() const
 {
 	return TankMovement;
 }
+
+EDrivingState ATankBase::GetCurrentDrivingState() const
+{
+	if(IsValid(TankMovement))
+	{
+		return TankMovement->GetCurrentDrivingState();
+	}
+	return EDrivingState::Idle;
+}
+
+FVector ATankBase::GetVelocityDirection() const
+{
+	if(IsValid(TankMovement))
+	{
+		return TankMovement->GetVelocityDirection();
+	}
+	else
+	{
+		return GetVelocity().GetSafeNormal();
+	}
+}
+
+float ATankBase::GetCurrentSpeed() const
+{
+	if(IsValid(TankMovement))
+	{
+		return TankMovement->GetCurrentSpeed();
+	}
+	else
+	{
+		return GetVelocity().Size();
+	}
+}
+
+float ATankBase::GetCurrentMaxSpeed() const
+{
+	if(IsValid(TankMovement))
+	{
+		return TankMovement->GetCurrentMaxSpeed();
+	}
+	return -1.0f;
+}
+
+float ATankBase::GetSlideDegree() const
+{
+	if(IsValid(TankMovement))
+	{
+		return TankMovement->GetSlideDegree();
+	}
+	return -1.0f;
+}
+
+bool ATankBase::GetIsSliding() const
+{
+	if(IsValid(TankMovement))
+	{
+		return TankMovement->GetIsSliding();
+	}
+	return false;
+}

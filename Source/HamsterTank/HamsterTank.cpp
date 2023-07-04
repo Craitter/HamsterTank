@@ -3,4 +3,34 @@
 #include "HamsterTank.h"
 #include "Modules/ModuleManager.h"
 
-IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, HamsterTank, "HamsterTank" );
+IMPLEMENT_PRIMARY_GAME_MODULE(FHamsterTankModule, HamsterTank, "HamsterTank");
+
+void FHamsterTankModule::StartupModule()
+{
+	IModuleInterface::StartupModule();
+
+#if WITH_GAMEPLAY_DEBUGGER
+	IGameplayDebugger& GameplayDebuggerModule = IGameplayDebugger::Get();
+	GameplayDebuggerModule.RegisterCategory("Player", IGameplayDebugger::FOnGetCategory::CreateStatic(&FGameplayDebuggerCategory_Player::MakeInstance));
+	GameplayDebuggerModule.NotifyCategoriesChanged();
+#endif // WITH_GAMEPLAY_DEBUGGER
+}
+
+void FHamsterTankModule::ShutdownModule()
+{
+#if WITH_GAMEPLAY_DEBUGGER
+	if (IGameplayDebugger::IsAvailable())
+	{
+		IGameplayDebugger& GameplayDebuggerModule = IGameplayDebugger::Get();
+		GameplayDebuggerModule.UnregisterCategory("Player");
+		GameplayDebuggerModule.NotifyCategoriesChanged();
+	}
+#endif // WITH_GAMEPLAY_DEBUGGER
+	
+	IModuleInterface::ShutdownModule();
+}
+
+bool FHamsterTankModule::IsGameModule() const
+{
+	return true;
+}

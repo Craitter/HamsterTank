@@ -4,6 +4,67 @@
 #include "TankMovementComponent.h"
 
 
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+#include "Components/SphereComponent.h"
+#endif
+
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+static TAutoConsoleVariable<bool> CVarShowAll(
+	TEXT("Tank.Movement.Debug.All"),
+	false,
+	TEXT("Shows all available Debug options"),
+	ECVF_Default);
+
+// static TAutoConsoleVariable<bool> CVarShowPlayer(
+// 	TEXT("Tank.Movement.Debug.Player"),
+// 	false,
+// 	TEXT("Shows all available Debug options for the Player"),
+// 	ECVF_Default);
+//
+// static TAutoConsoleVariable<bool> CVarShowAI(
+// 	TEXT("Tank.Movement.Debug.AI"),
+// 	false,
+// 	TEXT("Shows all available Debug options for the NonPlayer"),
+// 	ECVF_Default);
+
+static TAutoConsoleVariable<bool> CVarShowImpact(
+	TEXT("Tank.Movement.Debug.Impact"),
+	false,
+	TEXT("Shows Impacts that happend while moving"),
+	ECVF_Default);
+
+static TAutoConsoleVariable<bool> CVarShowVelocityDirection(
+	TEXT("Tank.Movement.Debug.VelocityDirection"),
+	false,
+	TEXT("Draws an Arrow which faces in Direction of the Velocity"),
+	ECVF_Default);
+
+static TAutoConsoleVariable<bool> CVarShowInputDirection(
+	TEXT("Tank.Movement.Debug.InputDirection"),
+	false,
+	TEXT("Draws 4 Arrows and shows which input Directions are pressed"),
+	ECVF_Default);
+
+static TAutoConsoleVariable<bool> CVarShowTurningCircle(
+	TEXT("Tank.Movement.Debug.TurningCircle"),
+	false,
+	TEXT("Draws a circle when there is Y input which displays the turning circle"),
+	ECVF_Default);
+
+static TAutoConsoleVariable<bool> CVarShowCollider(
+	TEXT("Tank.Movement.Debug.Collider"),
+	false,
+	TEXT("Draws the CollisionSphere of the Pawn"),
+	ECVF_Default);
+
+// static TAutoConsoleVariable<bool> CVarShowImpact(
+// 	TEXT("Tank.Movement.Debug.ShowImpact"),
+// 	false,
+// 	TEXT("Shows Impacts that happend while moving"),
+// 	ECVF_Default);
+
+
+#endif
 
 UTankMovementComponent::UTankMovementComponent()
 {
@@ -16,6 +77,9 @@ UTankMovementComponent::UTankMovementComponent()
 	NavAgentProps.bCanSwim = false;
 	NavAgentProps.bCanWalk = true;
 	ResetMoveState();
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+	CVarShowAll->AsVariable()->SetOnChangedCallback(FConsoleVariableDelegate::CreateStatic(&UTankMovementComponent::OnToggleAllDebug));
+#endif
 }
 
 void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -54,6 +118,88 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 	ProcessUserDesiredRotation(DeltaTime);
 	
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+	FVector StartLocation;
+	FVector EndLocation;
+	
+	if(CVarShowVelocityDirection->GetBool())
+	{
+		float ZOffset = 100.0f;
+		if(Velocity.IsNearlyZero())
+		{
+			StartLocation = GetActorLocation();
+			StartLocation.Z += ZOffset;
+			DrawDebugPoint(GetWorld(), StartLocation, 10.0f, FColor::Blue, false, -1, 5.0f);
+		
+		}
+		else
+		{
+			StartLocation = GetActorLocation() - Velocity.GetSafeNormal() * 20;
+			StartLocation.Z += ZOffset;
+			EndLocation = GetActorLocation() + Velocity.GetSafeNormal() * 20;
+			EndLocation.Z += ZOffset;
+			DrawDebugDirectionalArrow(GetWorld(), StartLocation, EndLocation, 30.0f, FColor::Blue, false, -1, 5.0f, 10.0f);
+		}
+
+	}
+	if(CVarShowInputDirection->GetBool())
+	{
+		FColor PressedColor = FColor::White;
+		FColor ReleasedColor = FColor(FLinearColor::Gray.ToFColor(true));
+		FColor RightArrowColor = ReleasedColor;
+		FColor ForwardArrowColor = ReleasedColor;
+		FColor LeftArrowColor = ReleasedColor;
+		FColor BackwardArrowColor = ReleasedColor;
+		if(!GetPendingInputVector().IsNearlyZero())
+		{
+			if(GetPendingInputVector().X < -UE_FLOAT_NORMAL_THRESH)
+			{
+				BackwardArrowColor = PressedColor;
+			}
+			else if(GetPendingInputVector().X > UE_FLOAT_NORMAL_THRESH)
+			{
+				ForwardArrowColor = PressedColor;
+			}
+
+			if(GetPendingInputVector().Y < -UE_FLOAT_NORMAL_THRESH)
+			{
+				LeftArrowColor = PressedColor;
+			}
+			else if(GetPendingInputVector().Y > UE_FLOAT_NORMAL_THRESH)
+			{
+				RightArrowColor = PressedColor;
+			}
+
+			
+		}
+		StartLocation = GetActorLocation();
+		EndLocation = StartLocation;
+		float Offset = 100.0f;
+		float Length = 50.0f;
+		float ArrowSize = 30.0f;
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation + PawnOwner->GetActorForwardVector() * Offset, StartLocation + PawnOwner->GetActorForwardVector() * (Offset + Length), ArrowSize, ForwardArrowColor, false, -1, 4.0f, 10.0f);
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation - PawnOwner->GetActorForwardVector() * Offset, StartLocation - PawnOwner->GetActorForwardVector() * (Offset + Length), ArrowSize, BackwardArrowColor, false, -1, 4.0f, 10.0f);
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation + PawnOwner->GetActorRightVector() * Offset, StartLocation + PawnOwner->GetActorRightVector() * (Offset + Length), ArrowSize, RightArrowColor, false, -1, 4.0f, 10.0f);
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation - PawnOwner->GetActorRightVector() * Offset, StartLocation - PawnOwner->GetActorRightVector() * (Offset + Length), ArrowSize, LeftArrowColor, false, -1, 4.0f, 10.0f);
+	}
+	if(CVarShowCollider->GetBool())
+	{
+		TWeakObjectPtr<USphereComponent> Shape = Cast<USphereComponent>(UpdatedComponent);
+		if(Shape.IsValid())
+		{
+			DrawDebugSphere(GetWorld(), GetActorLocation(), Shape->GetScaledSphereRadius(), 10.0f, FColor::Green, false, -1, 1);
+		}
+		
+	}
+	//VelocityDirection
+	//MaxSpeed
+	//CurrentSpeed
+	//DrivingState
+	//Sliding
+	//Resistance
+#endif
+
+	
 	ConsumeInputVector();
 	
 //Move
@@ -74,7 +220,8 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 			}
 			else
 			{
-				StartSliding(Hit.ImpactNormal);
+
+				StartSliding(Hit.ImpactNormal);				
 				
 				HandleImpact(Hit, DeltaTime, DeltaVelocity);
 				// Try to slide the remaining distance along the surface.
@@ -101,7 +248,13 @@ void UTankMovementComponent::HandleImpact(const FHitResult& Hit, float TimeSlice
 	Super::HandleImpact(Hit, TimeSlice, MoveDelta);
 	// UE_LOG(LogTemp, Warning , TEXT("Impact"));
 	//TODO: CameraShakeShit
-	
+
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+	if(CVarShowImpact->GetBool())
+	{
+		DrawDebugPoint(GetWorld(), Hit.ImpactPoint, 8.0f, FColor::Yellow, false, 0.5f, 0.0f);
+	}
+#endif
 }
 
 void UTankMovementComponent::UpdateComponentVelocity()
@@ -215,11 +368,6 @@ void UTankMovementComponent::StartSliding(const FVector& ImpactNormal)
 	BlockedDirection = ImpactNormal * -1;
 }
 
-bool UTankMovementComponent::GetIsSliding() const
-{
-	return bIsSliding;
-}
-
 void UTankMovementComponent::StopSliding()
 {
 	bIsSliding = false;
@@ -285,9 +433,70 @@ void UTankMovementComponent::ProcessUserDesiredRotation(float InDeltaTime)
 		const float DeltaLocation = FVector::DotProduct(PawnOwner->GetActorForwardVector(), Velocity) * InDeltaTime;
 		const float RotationAngle =  DeltaLocation / MinTurningRadius * GetPendingInputVector().Y;
 		RotationDelta = FQuat(PawnOwner->GetActorUpVector(), RotationAngle);
+
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+		if(CVarShowTurningCircle->GetBool() && fabs(GetPendingInputVector().Y) > UE_FLOAT_NORMAL_THRESH)
+		{
+			const FVector Direction = GetPendingInputVector().Y > 0.0f ? PawnOwner->GetActorRightVector() : -PawnOwner->GetActorRightVector();
+			const FVector Location = GetActorLocation() +  Direction * MinTurningRadius * 100;
+			DrawDebugCircle(GetWorld(), Location, MinTurningRadius * 100, 100.0f, FColor::Black, false, -1, 2.0f, 8.0f, FVector(0, 1, 0), FVector(1, 0, 0));
+		}
+	
+#endif
+		
 	}
 	//Adjusting Tank Rotation and rotating the Velocity to match the direction
 	Velocity = RotationDelta.RotateVector(Velocity);
 	PawnOwner->AddActorWorldRotation(RotationDelta, true);
 	
 }
+
+EDrivingState UTankMovementComponent::GetCurrentDrivingState() const
+{
+	return DrivingState;
+}
+
+FVector UTankMovementComponent::GetVelocityDirection() const
+{
+	return Velocity.GetSafeNormal();
+}
+
+float UTankMovementComponent::GetCurrentSpeed() const
+{
+	return Velocity.Size();
+}
+
+float UTankMovementComponent::GetCurrentMaxSpeed() const
+{
+	return CurrentMaxSpeed;
+}
+
+float UTankMovementComponent::GetSlideDegree() const
+{
+	if(GetIsSliding())
+	{
+		const float SlideRatio = GetIsSliding() ? fabs(fabs(FVector::DotProduct(PawnOwner->GetActorForwardVector(), BlockedDirection)) -1) : 1.0f;
+		return FMath::RadiansToDegrees(acos(SlideRatio));
+	}
+	return -1.0f;
+}
+
+bool UTankMovementComponent::GetIsSliding() const
+{
+	return bIsSliding;
+}
+
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+
+void UTankMovementComponent::OnToggleAllDebug(IConsoleVariable* ConsoleVariable)
+{
+	const bool NewFlag = CVarShowAll->GetBool();
+	CVarShowCollider->Set(NewFlag);
+	CVarShowImpact->Set(NewFlag);
+	CVarShowInputDirection->Set(NewFlag);
+	CVarShowTurningCircle->Set(NewFlag);
+	CVarShowVelocityDirection->Set(NewFlag);
+}
+
+#endif
+

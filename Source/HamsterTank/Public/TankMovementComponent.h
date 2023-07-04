@@ -7,7 +7,7 @@
 #include "TankMovementComponent.generated.h"
 
 
-UENUM()
+UENUM(BlueprintType)
 enum class EDrivingState
 {
 	Idle,
@@ -29,8 +29,9 @@ class HAMSTERTANK_API UTankMovementComponent : public UPawnMovementComponent
 	GENERATED_BODY()
 
 public:
+	//Todo: make it cm per second for entering values
 	//Todo: Make BlueprintFunctions for useful Members/Functions
-	//Todo: Debug: Circle for Turning Radius, VelocityDirectionArrow, InputDirectionArrow, PrintVelocityDirection, MaxSpeed, CurrentSpeed, DrivingState, Sliding?, BlockedDirectionArrow, ImpactPoint?, Restistances 
+	//Todo: Debug:, , PrintVelocityDirection, MaxSpeed, CurrentSpeed, DrivingState, Sliding?, ,  Restistances 
 
 	UTankMovementComponent();
 	
@@ -51,8 +52,7 @@ protected:
 
 	//If you move forward and want to transition to the sliding state this should be called... it does not call SlideAlongSurface!!! it just enables velocity adjustment depending on the angle to the Surface
 	void StartSliding(const FVector& ImpactNormal);
-	//Returns bIsSliding
-	bool GetIsSliding() const;
+	
 	//Sets bIsSliding to false and Zeros BlockingDirection
 	void StopSliding();
 
@@ -95,8 +95,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Speed", meta = (ClampMin="0.1", ClampMax="1.0", UIMin="0.1", UIMax="1.0", ForceUnits="%"))
 	float MinVelocityRatioWhenSliding = 0.3f;
 	
-	//Todo:set the correct Values in the Constructors (Pawn and MoveComp)
-	
 private:
 	//Intern Sliding Values
 	bool bIsSliding = false;
@@ -108,7 +106,7 @@ private:
 	float CurrentDrivingForce = 0.0f;
 	// in m/s temp value get recalculated each frame
 	float CurrentMaxSpeed = 0.0f;
-
+	
 	EDrivingState DrivingState = EDrivingState::Idle;
 	
 	void DetermineDrivingState();
@@ -133,6 +131,28 @@ private:
 
 	//Adjust VelocityRotation
 	void ProcessUserDesiredRotation(float InDeltaTime);
+public: //Simple Getters;
+	UFUNCTION(BlueprintCallable, Category = "TankMovement")
+	EDrivingState GetCurrentDrivingState() const;
+	UFUNCTION(BlueprintCallable, Category = "TankMovement")
+	FVector GetVelocityDirection() const;
+	UFUNCTION(BlueprintCallable, Category = "TankMovement")
+	float GetCurrentSpeed() const;
+	UFUNCTION(BlueprintCallable, Category = "TankMovement")
+	float GetCurrentMaxSpeed() const;
+	//returns -1 if we are not sliding;
+	UFUNCTION(BlueprintCallable, Category = "TankMovement")
+	float GetSlideDegree() const;
+	//Returns bIsSliding
+	UFUNCTION(BlueprintCallable, Category = "TankMovement")
+	bool GetIsSliding() const;
+private: // Debug Callback(s)
+#if ENABLE_DRAW_DEBUG
+	static void OnToggleAllDebug(IConsoleVariable* ConsoleVariable);
 	
-
+	// void OnTogglePlayerDebug(IConsoleVariable* ConsoleVariable);
+	//
+	// void OnToggleAIDebug(IConsoleVariable* ConsoleVariable);
+#endif
+	
 };

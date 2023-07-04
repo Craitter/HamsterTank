@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
+enum class EDrivingState;
 class USphereComponent;
 class UFloatingPawnMovement;
 class UTankMovementComponent;
@@ -52,7 +53,8 @@ protected:
 	
 
 public:	
-
+	
+	
 private:
 	
 public: //simple Getter Functions
@@ -67,5 +69,19 @@ public: //simple Getter Functions
 	TWeakObjectPtr<UCameraComponent> GetCamera() const;
 
 	TWeakObjectPtr<UTankMovementComponent> GetTankMovement() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
+	EDrivingState GetCurrentDrivingState() const;
+	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
+	FVector GetVelocityDirection() const;
+	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
+	float GetCurrentSpeed() const;
+	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
+	float GetCurrentMaxSpeed() const;
+	//returns -1 if we are not Sliding;
+	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
+	float GetSlideDegree() const;
+	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
+	bool GetIsSliding() const;
 	
 };
