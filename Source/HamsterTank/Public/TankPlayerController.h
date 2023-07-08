@@ -21,10 +21,14 @@ class HAMSTERTANK_API ATankPlayerController : public APlayerController
 public:
 	ATankPlayerController();
 
+	virtual void Tick(float DeltaSeconds) override;
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
 	virtual void BeginPlay() override;
+	
+
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
@@ -34,17 +38,29 @@ protected:
 	TObjectPtr<UInputAction> IA_Drive = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Aim = {nullptr};
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Fire = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> IMC_MK_Default = {nullptr};
 	
 	
 private:
 	void RequestDriveCallback(const FInputActionValue& Value);
 
+	void RequestAimCallback(const FInputActionValue& Value);
+
+	void RequestFire();
+
 	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
 	TWeakObjectPtr<ATankBase> TankPawn = {nullptr};
 
 	uint32 DriveDelegateHandle = 0;
 	uint32 DriveStopDelegateHandle = 0;
+	uint32 AimDelegateHandle = 0;
+	uint32 FireDelegateHandle = 0;
 	
 };
 

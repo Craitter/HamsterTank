@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
+class UTankSpringArmComponent;
 enum class EDrivingState;
 class USphereComponent;
 class UFloatingPawnMovement;
@@ -32,6 +33,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void UpdateTowerRotation(float DeltaTime) const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<USphereComponent> Sphere = {nullptr};
@@ -50,12 +52,30 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UTankMovementComponent> TankMovement = {nullptr};
-	
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
+	float MaxTowerTurningDegreePerSecond = 90.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
+	float MaxCameraPitchRotation = 5.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
+	float MaxCameraAffectingDistance = 1000.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
+	float MinCameraAffectingDistance = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
+	float MaxTargetOffset = 300.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
+	float MaxRightDistance = 700.0f;
 
 public:	
-	
+	void RequestAimAtTarget(const FVector& TargetLocation);
+	void RequestFire() const;
 	
 private:
+	FVector DesiredTowerAimLocation = FVector::ZeroVector;
+
+	FRotator DefaultCameraRotation = FRotator::ZeroRotator;
 	
 public: //simple Getter Functions
 	TWeakObjectPtr<USphereComponent> GetBox() const;
@@ -82,6 +102,5 @@ public: //simple Getter Functions
 	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
 	float GetSlideDegree() const;
 	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
-	bool GetIsSliding() const;
-	
+	bool GetIsSliding() const;	
 };

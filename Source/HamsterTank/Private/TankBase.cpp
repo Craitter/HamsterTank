@@ -32,6 +32,7 @@ ATankBase::ATankBase()
 	SetRootComponent(Sphere);
 	Base->SetupAttachment(Sphere);
 	Tower->SetupAttachment(Sphere);
+	// Tower->SetUsingAbsoluteRotation(true);
 	SpringArm->SetupAttachment(Sphere);
 	Camera->SetupAttachment(SpringArm);
 	
@@ -44,16 +45,60 @@ void ATankBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
+	if(IsValid(SpringArm))
+	{
+		DefaultCameraRotation = SpringArm->GetRelativeRotation();
+	}
 }
 
+
+void ATankBase::UpdateTowerRotation(float DeltaTime) const
+{
+	if(IsValid(Tower))
+	{
+		const FVector TowerLocation = Tower->GetComponentLocation();
+		const FVector AimTargetDirection = DesiredTowerAimLocation - TowerLocation;
+		const FQuat ShortestRotation = FQuat::FindBetweenVectors(Tower->GetForwardVector(), AimTargetDirection);
+		const float DeltaDegree = FMath::RadiansToDegrees(ShortestRotation.GetAngle());
+		const float AngleRatio = FMath::Clamp( (DeltaTime * MaxTowerTurningDegreePerSecond) / DeltaDegree, 0.0f, 1.0f);
+		const FQuat DeltaRotation = FQuat::Slerp(Tower->GetComponentRotation().Quaternion(), AimTargetDirection.Rotation().Quaternion(), AngleRatio);
+		Tower->SetWorldRotation(DeltaRotation);
+	}
+}
 
 // Called every frame
 void ATankBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	UpdateTowerRotation(DeltaTime);
+
+	if(IsValid(SpringArm))
+	{
+			
+	}
+
 }
 
+
+void ATankBase::RequestAimAtTarget(const FVector& TargetLocation)
+{
+
+	if(IsValid(Tower))
+	{
+		DesiredTowerAimLocation = TargetLocation;
+		DesiredTowerAimLocation.Z = Tower->GetComponentLocation().Z;
+	}
+}
+
+void ATankBase::RequestFire() const
+{
+	if(IsValid(Tower))
+	{
+		DrawDebugSphere(GetWorld(), DesiredTowerAimLocation, 10.0f, 10.0f,  FColor::Red, false, 5.0f);
+		DrawDebugLine(GetWorld(), Tower->GetComponentLocation(), DesiredTowerAimLocation, FColor::Orange, false, 5.0f, 0.0f, 2.0f);
+	}
+}
 
 TWeakObjectPtr<USphereComponent> ATankBase::GetBox() const
 {
@@ -144,3 +189,5 @@ bool ATankBase::GetIsSliding() const
 	}
 	return false;
 }
+
+
