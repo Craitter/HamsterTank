@@ -36,12 +36,18 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_Drive = {nullptr};
+		
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Fire = {nullptr};
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_ChangeSpringArmDirection = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_Aim = {nullptr};
-	
+
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputAction> IA_Fire = {nullptr};
+	TObjectPtr<UInputAction> IA_EnableCameraRotation = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> IMC_MK_Default = {nullptr};
@@ -50,17 +56,23 @@ protected:
 private:
 	void RequestDriveCallback(const FInputActionValue& Value);
 
+	void RequestFireCallback();
+
 	void RequestAimCallback(const FInputActionValue& Value);
 
-	void RequestFire();
+	void RequestEnableCameraCallback(const FInputActionValue& Value);
+
+	bool bAddControlRotation = false;
 
 	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
 	TWeakObjectPtr<ATankBase> TankPawn = {nullptr};
 
 	uint32 DriveDelegateHandle = 0;
 	uint32 DriveStopDelegateHandle = 0;
-	uint32 AimDelegateHandle = 0;
 	uint32 FireDelegateHandle = 0;
+	uint32 AimDelegateHandle = 0;
+	uint32 EnableCameraRotationDelegateHandle = 0;
+	uint32 DisableCameraRotationDelegateHandle = 0;
 	
 };
 

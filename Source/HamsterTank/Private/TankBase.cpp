@@ -9,7 +9,6 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
-
 // Sets default values
 ATankBase::ATankBase()
 {
@@ -32,7 +31,6 @@ ATankBase::ATankBase()
 	SetRootComponent(Sphere);
 	Base->SetupAttachment(Sphere);
 	Tower->SetupAttachment(Sphere);
-	// Tower->SetUsingAbsoluteRotation(true);
 	SpringArm->SetupAttachment(Sphere);
 	Camera->SetupAttachment(SpringArm);
 	
@@ -44,11 +42,7 @@ ATankBase::ATankBase()
 void ATankBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if(IsValid(SpringArm))
-	{
-		DefaultCameraRotation = SpringArm->GetRelativeRotation();
-	}
+	
 }
 
 
@@ -70,20 +64,12 @@ void ATankBase::UpdateTowerRotation(float DeltaTime) const
 void ATankBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 	UpdateTowerRotation(DeltaTime);
-
-	if(IsValid(SpringArm))
-	{
-			
-	}
-
 }
 
 
 void ATankBase::RequestAimAtTarget(const FVector& TargetLocation)
 {
-
 	if(IsValid(Tower))
 	{
 		DesiredTowerAimLocation = TargetLocation;
@@ -95,8 +81,29 @@ void ATankBase::RequestFire() const
 {
 	if(IsValid(Tower))
 	{
-		DrawDebugSphere(GetWorld(), DesiredTowerAimLocation, 10.0f, 10.0f,  FColor::Red, false, 5.0f);
-		DrawDebugLine(GetWorld(), Tower->GetComponentLocation(), DesiredTowerAimLocation, FColor::Orange, false, 5.0f, 0.0f, 2.0f);
+		const FVector StartLocation = Tower->GetComponentLocation();
+		const FVector AimTargetDirection = DesiredTowerAimLocation - StartLocation;
+		const float Distance =  AimTargetDirection.Size();
+		const FVector EndLocation = StartLocation + (Tower->GetForwardVector() * Distance);
+		DrawDebugSphere(GetWorld(), EndLocation, 10.0f, 10.0f,  FColor::Red, false, 5.0f);
+		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Orange, false, 5.0f, 0.0f, 2.0f);
+	}
+}
+
+void ATankBase::RequestEnableCameraRotation(bool bIsEnabled) const
+{
+	if(IsValid(Controller) && IsValid(SpringArm))
+	{
+		if(bIsEnabled)
+		{
+			Controller->SetControlRotation(SpringArm->GetTargetRotation());
+			SpringArm->bUsePawnControlRotation = true;
+		}
+		else
+		{
+			SpringArm->SetWorldRotation(Controller->GetControlRotation());
+			SpringArm->bUsePawnControlRotation = false;
+		}
 	}
 }
 

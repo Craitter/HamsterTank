@@ -10,6 +10,8 @@
 ATankPlayerController::ATankPlayerController()
 {
 	bShowMouseCursor = true;
+	const TObjectPtr<ULocalPlayer> DefaultLocalPlayer = ULocalPlayer::StaticClass()->GetDefaultObject<ULocalPlayer>();
+	DefaultLocalPlayer->AspectRatioAxisConstraint = AspectRatio_MaintainYFOV;
 }
 
 void ATankPlayerController::Tick(float DeltaSeconds)
@@ -76,8 +78,10 @@ void ATankPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		EnhancedInputComponent->RemoveBindingByHandle(DriveDelegateHandle);
 		EnhancedInputComponent->RemoveBindingByHandle(DriveStopDelegateHandle);
-		EnhancedInputComponent->RemoveBindingByHandle(AimDelegateHandle);
 		EnhancedInputComponent->RemoveBindingByHandle(FireDelegateHandle);
+		EnhancedInputComponent->RemoveBindingByHandle(AimDelegateHandle);
+		EnhancedInputComponent->RemoveBindingByHandle(EnableCameraRotationDelegateHandle);
+		EnhancedInputComponent->RemoveBindingByHandle(DisableCameraRotationDelegateHandle);
 	}
 	
 	Super::EndPlay(EndPlayReason);
@@ -90,8 +94,10 @@ void ATankPlayerController::SetupInputComponent()
 	EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
 	DriveDelegateHandle = EnhancedInputComponent->BindAction(IA_Drive, ETriggerEvent::Triggered, this, &ATankPlayerController::RequestDriveCallback).GetHandle();
 	DriveStopDelegateHandle = EnhancedInputComponent->BindAction(IA_Drive, ETriggerEvent::Completed, this, &ATankPlayerController::RequestDriveCallback).GetHandle();
+	FireDelegateHandle = EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &ATankPlayerController::RequestFireCallback).GetHandle();
 	AimDelegateHandle = EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Triggered, this, &ATankPlayerController::RequestAimCallback).GetHandle();
-	FireDelegateHandle = EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &ATankPlayerController::RequestFire).GetHandle();
+	EnableCameraRotationDelegateHandle = EnhancedInputComponent->BindAction(IA_EnableCameraRotation, ETriggerEvent::Started, this, &ATankPlayerController::RequestEnableCameraCallback).GetHandle();
+	DisableCameraRotationDelegateHandle = EnhancedInputComponent->BindAction(IA_EnableCameraRotation, ETriggerEvent::Completed, this, &ATankPlayerController::RequestEnableCameraCallback).GetHandle();
 }
 
 void ATankPlayerController::RequestDriveCallback(const FInputActionValue& Value)
@@ -107,25 +113,39 @@ void ATankPlayerController::RequestDriveCallback(const FInputActionValue& Value)
 	}
 }
 
-void ATankPlayerController::RequestAimCallback(const FInputActionValue& Value)
-{
-
-	
-	// const FVector2D AimInput = Value.Get<FVector2D>();
-	// AddPitchInput(AimInput.Y);
-	// AddYawInput(AimInput.X);
-}
-
-void ATankPlayerController::RequestFire()
+void ATankPlayerController::RequestFireCallback()
 {
 	if(TankPawn.IsValid())
 	{
 		TankPawn->RequestFire();
-		
-		
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning , TEXT("%s %s() No Valid Pawn to Forward Input to"), *UEnum::GetValueAsString(GetLocalRole()), *FString(__FUNCTION__));
 	}
 }
+
+void ATankPlayerController::RequestAimCallback(const FInputActionValue& Value)
+{
+	if(bAddControlRotation)
+	{
+		AddYawInput(Value.Get<float>());
+	}
+}
+
+void ATankPlayerController::RequestEnableCameraCallback(const FInputActionValue& Value)
+{
+	if(TankPawn.IsValid())
+	{
+		
+		const bool bCameraEnabled = Value.Get<bool>();
+		bAddControlRotation = bCameraEnabled;
+		TankPawn->RequestEnableCameraRotation(bCameraEnabled);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning , TEXT("%s %s() No Valid Pawn to Forward Input to"), *UEnum::GetValueAsString(GetLocalRole()), *FString(__FUNCTION__));
+	}
+	
+}
+
