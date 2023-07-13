@@ -6,7 +6,6 @@
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
-class UTankSpringArmComponent;
 enum class EDrivingState;
 class USphereComponent;
 class UFloatingPawnMovement;
@@ -34,7 +33,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
-	void UpdateTowerRotation(float DeltaTime) const;
+	// void UpdateTowerRotation(float DeltaTime) const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<USphereComponent> Sphere = {nullptr};
@@ -46,8 +45,8 @@ protected:
 	TObjectPtr<USkeletalMeshComponent> Tower = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<USpringArmComponent> SpringArm = {nullptr};
-
+	TObjectPtr<USpringArmComponent> SpringArmComponent = {nullptr};
+	
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UCameraComponent> Camera = {nullptr};
 
@@ -59,15 +58,14 @@ protected:
 
 
 public:	
-	void RequestAimAtTarget(const FVector& TargetLocation);
+	// void RequestAimAtTarget(const FVector& TargetLocation);
 	void RequestFire() const;
-	void RequestEnableCameraRotation(bool bIsEnabled) const;
-	
 private:
-	FVector DesiredTowerAimLocation = FVector::ZeroVector;
+	//InternValue
+	// FVector DesiredTowerAimLocation = FVector::ZeroVector;
 	
 public: //simple Getter Functions
-	TWeakObjectPtr<USphereComponent> GetBox() const;
+	TWeakObjectPtr<USphereComponent> GetSphere() const;
 
 	TWeakObjectPtr<USkeletalMeshComponent> GetBase() const;
 
@@ -92,4 +90,6 @@ public: //simple Getter Functions
 	float GetSlideDegree() const;
 	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
 	bool GetIsSliding() const;
+
+	// FVector GetDesiredTargetRotation() const;
 };

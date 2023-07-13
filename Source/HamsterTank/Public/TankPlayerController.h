@@ -7,12 +7,17 @@
 #include "InputMappingContext.h"
 #include "TankPlayerController.generated.h"
 
+class USphereComponent;
+class UCameraComponent;
+class USpringArmComponent;
 class ATankBase;
 class UInputAction;
 struct FInputActionValue;
 /**
  * 
  */
+
+
 UCLASS()
 class HAMSTERTANK_API ATankPlayerController : public APlayerController
 {
@@ -28,8 +33,6 @@ protected:
 
 	virtual void BeginPlay() override;
 	
-
-
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	virtual void SetupInputComponent() override;
@@ -60,8 +63,6 @@ private:
 
 	void RequestAimCallback(const FInputActionValue& Value);
 
-	void RequestEnableCameraCallback(const FInputActionValue& Value);
-
 	bool bAddControlRotation = false;
 
 	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
@@ -70,10 +71,7 @@ private:
 	uint32 DriveDelegateHandle = 0;
 	uint32 DriveStopDelegateHandle = 0;
 	uint32 FireDelegateHandle = 0;
-	uint32 AimDelegateHandle = 0;
-	uint32 EnableCameraRotationDelegateHandle = 0;
-	uint32 DisableCameraRotationDelegateHandle = 0;
-	
+	uint32 AimDelegateHandle = 0;	
 };
 
 
