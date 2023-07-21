@@ -9,7 +9,7 @@
 #endif
 
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-static TAutoConsoleVariable<bool> CVarShowAll(
+static TAutoConsoleVariable<bool> CVarShowAllTankMovement(
 	TEXT("Tank.Movement.Debug.All"),
 	false,
 	TEXT("Shows all available Debug options"),
@@ -78,7 +78,7 @@ UTankMovementComponent::UTankMovementComponent()
 	NavAgentProps.bCanWalk = true;
 	ResetMoveState();
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-	CVarShowAll->AsVariable()->SetOnChangedCallback(FConsoleVariableDelegate::CreateStatic(&UTankMovementComponent::OnToggleAllDebug));
+	CVarShowAllTankMovement->AsVariable()->SetOnChangedCallback(FConsoleVariableDelegate::CreateStatic(&UTankMovementComponent::OnToggleAllDebug));
 #endif
 }
 
@@ -107,7 +107,7 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 			StopSliding();
 		}
 	}
-	if(DrivingState == EDrivingState::Idle)
+	if(DrivingState == EDrivingState::DS_Idle)
 	{
 		Velocity = FVector::ZeroVector;
 	}
@@ -205,7 +205,7 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 //Move
 	// bPositionCorrected = false;
 	const FVector DeltaVelocity = Velocity * 100 * DeltaTime; //Convert to cm from m/s
-	if (DrivingState != EDrivingState::Idle)
+	if (DrivingState != EDrivingState::DS_Idle)
 	{
 		const FQuat Rotation = UpdatedComponent->GetComponentQuat();
 		FHitResult Hit(1.f);
@@ -289,27 +289,27 @@ void UTankMovementComponent::DetermineDrivingState()
 	{
 		if(Velocity.SizeSquared() < UE_FLOAT_NORMAL_THRESH)
 		{
-			DrivingState = EDrivingState::Idle;
+			DrivingState = EDrivingState::DS_Idle;
 		}
 		else
 		{
-			DrivingState = EDrivingState::Neutral;
+			DrivingState = EDrivingState::DS_Neutral;
 		}
 	}
 	else if(DotProduct > 0.0f)
 	{
 		if(GetPendingInputVector().X > 0.0f)
 		{
-			DrivingState = EDrivingState::Forward;
+			DrivingState = EDrivingState::DS_Forward;
 		}
 		else
 		{
-			DrivingState = EDrivingState::Backward;
+			DrivingState = EDrivingState::DS_Backward;
 		}
 	}
 	else // (DotProduct < 0.0f)
 	{
-		DrivingState = EDrivingState::Breaking;
+		DrivingState = EDrivingState::DS_Breaking;
 	}
 }
 
@@ -342,7 +342,7 @@ float UTankMovementComponent::GetSlideVelocityRatio() const
 bool UTankMovementComponent::IsStillSliding()
 {
 	//Maybe some of this can be removed because when there is no blocking hit we stop sliding as well...
-	if(DrivingState == EDrivingState::Idle || BlockedDirection.IsNearlyZero())
+	if(DrivingState == EDrivingState::DS_Idle || BlockedDirection.IsNearlyZero())
 	{
 		return false;
 	}
@@ -378,15 +378,15 @@ void UTankMovementComponent::SetDrivingValuesDependingOnState()
 {
 	switch (DrivingState)
 	{
-	case EDrivingState::Idle:
-	case EDrivingState::Neutral:
-	case EDrivingState::Forward:
+	case EDrivingState::DS_Idle:
+	case EDrivingState::DS_Neutral:
+	case EDrivingState::DS_Forward:
 		SetForwardDrivingValues();
 		break;
-	case EDrivingState::Backward:
+	case EDrivingState::DS_Backward:
 		SetBackwardDrivingValues();
 		break;
-	case EDrivingState::Breaking:
+	case EDrivingState::DS_Breaking:
 		SetBreakingDrivingValues();
 		break;
 	default: ;
@@ -423,7 +423,7 @@ FVector UTankMovementComponent::GetRollingResistance() const
 void UTankMovementComponent::ProcessUserDesiredRotation(float InDeltaTime)
 {
 	FQuat RotationDelta;
-	if(DrivingState == EDrivingState::Idle)
+	if(DrivingState == EDrivingState::DS_Idle)
 	{
 		const float RotationAngle = MaxFixedTurningDegree * InDeltaTime * GetPendingInputVector().Y;		
 		RotationDelta = FQuat(PawnOwner->GetActorUpVector(), FMath::DegreesToRadians(RotationAngle));
@@ -490,7 +490,7 @@ bool UTankMovementComponent::GetIsSliding() const
 
 void UTankMovementComponent::OnToggleAllDebug(IConsoleVariable* ConsoleVariable)
 {
-	const bool NewFlag = CVarShowAll->GetBool();
+	const bool NewFlag = CVarShowAllTankMovement->GetBool();
 	CVarShowCollider->Set(NewFlag);
 	CVarShowImpact->Set(NewFlag);
 	CVarShowInputDirection->Set(NewFlag);

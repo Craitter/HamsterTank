@@ -8,17 +8,17 @@
 
 
 UENUM(BlueprintType)
-enum class EDrivingState
+enum class EDrivingState : uint8
 {
-	Idle,
+	DS_Idle = 0,
 
-	Neutral,
+	DS_Neutral = 1,
 	
-	Forward,
+	DS_Forward = 2,
 
-	Backward,
+	DS_Backward = 3,
 
-	Breaking,
+	DS_Breaking = 4,
 };
 /**
  * 
@@ -103,7 +103,7 @@ private:
 	// in m/s temp value get recalculated each frame
 	float CurrentMaxSpeed = 0.0f;
 	
-	EDrivingState DrivingState = EDrivingState::Idle;
+	EDrivingState DrivingState = EDrivingState::DS_Idle;
 	
 	void DetermineDrivingState();
 	//this recalls Determine Driving Speed in one special case, but since we rely on the new Driving State we cannot do it before
@@ -134,6 +134,7 @@ public: //Simple Getters;
 	FVector GetVelocityDirection() const;
 	UFUNCTION(BlueprintCallable, Category = "TankMovement")
 	float GetCurrentSpeed() const;
+	//in m/s!!!
 	UFUNCTION(BlueprintCallable, Category = "TankMovement")
 	float GetCurrentMaxSpeed() const;
 	//returns -1 if we are not sliding;

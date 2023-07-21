@@ -8,7 +8,7 @@
 
 
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-static TAutoConsoleVariable<bool> CVarShowAll(
+static TAutoConsoleVariable<bool> CVarShowAllTank(
 	TEXT("Camera.Modifier.Translucent.Debug"),
 	false,
 	TEXT("Shows Debug Info for Translucent Obstacles"),
@@ -52,7 +52,7 @@ bool UCameraMod_TranslucentObstacles::ProcessViewRotation(AActor* ViewTarget, fl
 
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
 
-	if(bDebug || CVarShowAll->GetBool())
+	if(bDebug || CVarShowAllTank->GetBool())
 	{
 		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, -1.0f, 0.0f, 4.0f);
 	}
@@ -66,7 +66,7 @@ bool UCameraMod_TranslucentObstacles::ProcessViewRotation(AActor* ViewTarget, fl
 		{
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
 
-			if(bDebug || CVarShowAll->GetBool())
+			if(bDebug || CVarShowAllTank->GetBool())
 			{
 				DrawDebugPoint(GetWorld(), Hit.ImpactPoint, 8.0f, FColor::Red, false, -1.0f, 0.0f);
 			}
@@ -129,7 +129,7 @@ void UCameraMod_TranslucentObstacles::CacheViewTarget(TWeakObjectPtr<AActor> Vie
 	if(SphereRadius < 0.0f || bUseCollisionSphereRadiusAnyway)
 	{
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-		if(bDebug || CVarShowAll->GetBool())
+		if(bDebug || CVarShowAllTank->GetBool())
 		{
 			UE_LOG(LogTemp, Warning , TEXT("%s() Sphere Radius < 0 falling back to CollisionSphere Radius of Viewtarget"),*FString(__FUNCTION__));
 		}
@@ -179,6 +179,10 @@ void UCameraMod_TranslucentObstacles::OnCameraObstacleBlocksView(const FTransluc
 
 void UCameraMod_TranslucentObstacles::CameraObstacleHit(const TWeakObjectPtr<AActor> ObstacleActor)
 {
+	if(!ObstacleActor.IsValid())
+	{
+		return;
+	}
 	FTranslucentCameraObstacle& ExistingObstacle = CameraBlockingActors.FindOrAdd(ObstacleActor);
 
 	if(ExistingObstacle.Actor.IsValid())
@@ -190,7 +194,7 @@ void UCameraMod_TranslucentObstacles::CameraObstacleHit(const TWeakObjectPtr<AAc
 
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
 
-			if(bDebug || CVarShowAll->GetBool())
+			if(bDebug || CVarShowAllTank->GetBool())
 			{
 				UE_LOG(LogTemp, Warning , TEXT("%s() Name:%s Actor was already listed but not hidden, hiding now"), *FString(__FUNCTION__), *ExistingObstacle.Actor->GetName());
 			}
@@ -200,7 +204,7 @@ void UCameraMod_TranslucentObstacles::CameraObstacleHit(const TWeakObjectPtr<AAc
 		{
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
 
-			if(bDebug || CVarShowAll->GetBool())
+			if(bDebug || CVarShowAllTank->GetBool())
 			{
 				UE_LOG(LogTemp, Warning , TEXT("%s() Name:%s Actor was already listed and hidden, doing nothing"), *FString(__FUNCTION__), *ExistingObstacle.Actor->GetName());
 
@@ -213,7 +217,7 @@ void UCameraMod_TranslucentObstacles::CameraObstacleHit(const TWeakObjectPtr<AAc
 	{
 		ExistingObstacle.Actor = ObstacleActor;
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-		if((bDebug || CVarShowAll->GetBool()) && ExistingObstacle.Actor.IsValid())
+		if((bDebug || CVarShowAllTank->GetBool()) && ExistingObstacle.Actor.IsValid())
 		{
 			UE_LOG(LogTemp, Warning , TEXT("%s() Name:%s Actor was not listed, hiding now"), *FString(__FUNCTION__), *ExistingObstacle.Actor->GetName());
 		}

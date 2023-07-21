@@ -6,6 +6,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "TankBase.h"
+#include "Blueprint/UserWidget.h"
 
 
 ATankPlayerController::ATankPlayerController()
@@ -45,6 +46,11 @@ void ATankPlayerController::OnPossess(APawn* InPawn)
 	if(TankPawn.IsValid())
 	{
 		
+	}
+	const TWeakObjectPtr<UUserWidget> Widget = CreateWidget<UUserWidget>(this, GameOverlay);
+	if(Widget.IsValid())
+	{
+		Widget->AddToViewport();
 	}
 }
 

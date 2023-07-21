@@ -4,11 +4,12 @@
 
 #include "TankBase.h"
 
+#include "FireProjectileComponent.h"
+#include "ProjectileOriginComponent.h"
 #include "TankMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-
 
 
 // Sets default values
@@ -19,25 +20,36 @@ ATankBase::ATankBase()
 
 	Sphere = CreateDefaultSubobject<USphereComponent>("SphereCollider");
 	if(!ensure(IsValid(Sphere))) return;
-	Base = CreateDefaultSubobject<USkeletalMeshComponent>("TankBase");
-	if(!ensure(IsValid(Base))) return;
-	Tower = CreateDefaultSubobject<USkeletalMeshComponent>("TankTower");
-	if(!ensure(IsValid(Tower))) return;
+	Body = CreateDefaultSubobject<USkeletalMeshComponent>("TankBase");
+	if(!ensure(IsValid(Body))) return;
+	Head = CreateDefaultSubobject<USkeletalMeshComponent>("TankHead");
+	if(!ensure(IsValid(Head))) return;
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>("SpringArmComponent");
 	if(!ensure(IsValid(SpringArmComponent))) return;
 	Camera = CreateDefaultSubobject<UCameraComponent>("Camera");
 	if(!ensure(IsValid(Camera))) return;
 	TankMovement = CreateDefaultSubobject<UTankMovementComponent>("TankMovement");
 	if(!ensure(IsValid(TankMovement))) return;
+	FireProjectileComponent = CreateDefaultSubobject<UFireProjectileComponent>("FireProjectileComponent");
+	if(!ensure(IsValid(FireProjectileComponent))) return;
+	ProjectileOriginComponent = CreateDefaultSubobject<UProjectileOriginComponent>("ProjectileOrigin");
+	if(!ensure(IsValid(ProjectileOriginComponent))) return;
 	
 	SetRootComponent(Sphere);
-	Base->SetupAttachment(Sphere);
-	Tower->SetupAttachment(Sphere);
-	Tower->SetUsingAbsoluteRotation(true);
-	SpringArmComponent->SetupAttachment(Tower);
+	Body->SetupAttachment(Sphere);
+	Head->SetupAttachment(Body, TEXT("BoneTurret"));
+	Head->SetUsingAbsoluteRotation(true);
+	// if(Tower->LeaderPoseComponent != Base)
+	// {
+	// 	
+	// }
+	SpringArmComponent->SetupAttachment(Head);
 	SpringArmComponent->bDoCollisionTest = false;
 	//Todo:Set more default values so we dont lose them when renaming for example
 	Camera->SetupAttachment(SpringArmComponent);
+	ProjectileOriginComponent->SetupAttachment(Head);
+
+	
 }
 
 
@@ -46,7 +58,11 @@ ATankBase::ATankBase()
 void ATankBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if(IsValid(Head))
+	{
+		Head->SetWorldRotation(FRotator(Head->GetComponentRotation().Pitch, GetActorRotation().Yaw, 0.0f));
+	}
 }
 
 
@@ -81,13 +97,15 @@ void ATankBase::Tick(float DeltaTime)
 // 	}
 // }
 
-void ATankBase::RequestFire() const
+void ATankBase::RequestFire()
 {
-	if(IsValid(Tower))
+	if(IsValid(Head) && IsValid(Controller) && IsValid(FireProjectileComponent))
 	{
-		const FVector StartLocation = Tower->GetComponentLocation();
+		FireProjectileComponent->TryFireProjectile(this);
+		
+		const FVector StartLocation = Head->GetComponentLocation();
 		constexpr float Distance =  1000.0f;
-		const FVector EndLocation = StartLocation + Tower->GetForwardVector() * Distance;
+		const FVector EndLocation = StartLocation + Head->GetForwardVector() * Distance;
 		DrawDebugSphere(GetWorld(), EndLocation, 10.0f, 10.0f,  FColor::Red, false, 5.0f);
 		DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Orange, false, 5.0f, 0.0f, 2.0f);
 	}
@@ -101,12 +119,12 @@ TWeakObjectPtr<USphereComponent> ATankBase::GetSphere() const
 
 TWeakObjectPtr<USkeletalMeshComponent> ATankBase::GetBase() const
 {
-	return Base;
+	return Body;
 }
 
 TWeakObjectPtr<USkeletalMeshComponent> ATankBase::GetTower() const
 {
-	return Tower;
+	return Head;
 }
 
 TWeakObjectPtr<USpringArmComponent> ATankBase::GetSpringArm() const
@@ -124,13 +142,18 @@ TWeakObjectPtr<UTankMovementComponent> ATankBase::GetTankMovement() const
 	return TankMovement;
 }
 
+TWeakObjectPtr<UFireProjectileComponent> ATankBase::GetFireProjectileComponent() const
+{
+	return FireProjectileComponent;
+}
+
 EDrivingState ATankBase::GetCurrentDrivingState() const
 {
 	if(IsValid(TankMovement))
 	{
 		return TankMovement->GetCurrentDrivingState();
 	}
-	return EDrivingState::Idle;
+	return EDrivingState::DS_Idle;
 }
 
 FVector ATankBase::GetVelocityDirection() const
@@ -182,6 +205,43 @@ bool ATankBase::GetIsSliding() const
 		return TankMovement->GetIsSliding();
 	}
 	return false;
+}
+
+bool ATankBase::GetHasEndlessAmmo() const
+{
+	if(IsValid(FireProjectileComponent))
+	{
+		return FireProjectileComponent->GetHasEndlessAmmo();
+	}
+	return false;
+}
+
+int32 ATankBase::GetCurrentAmmo() const
+{
+	if(IsValid(FireProjectileComponent))
+	{
+		return FireProjectileComponent->GetCurrentAmmo();
+	}
+	return 0;
+}
+
+int32 ATankBase::GetMaxAmmo() const
+{
+	if(IsValid(FireProjectileComponent))
+	{
+		return FireProjectileComponent->GetMaxAmmo();
+	}
+	return 0;
+}
+
+FString ATankBase::GetBodyName()
+{
+	if(IsValid(Body))
+	{
+		UE_LOG(LogTemp, Warning , TEXT("%s"), *Body->GetReadableName());
+		return Body->GetReadableName();
+	}
+	return FString();
 }
 
 // FVector ATankBase::GetDesiredTargetRotation() const

@@ -49,7 +49,7 @@ protected:
 
 	//The Material to Apply to Obstacles
 	UPROPERTY(EditDefaultsOnly, Category = "Transparency")
-	TWeakObjectPtr<UMaterialInterface> TranslucentMaterial = {nullptr};
+	TObjectPtr<UMaterialInterface> TranslucentMaterial = {nullptr};
 
 	//if this is -1 the view targets collision sphere will be used, you can set bUseCollisionSphereAnyway = true, if you want to have both values set and change at runtime
 	UPROPERTY(EditAnywhere, Category = "Transparency")

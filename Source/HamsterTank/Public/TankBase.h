@@ -6,7 +6,10 @@
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
-enum class EDrivingState;
+class UProjectileOriginComponent;
+class UFireProjectileComponent;
+enum class EDrivingState : uint8;
+class AProjectileBase;
 class USphereComponent;
 class UFloatingPawnMovement;
 class UTankMovementComponent;
@@ -39,10 +42,10 @@ protected:
 	TObjectPtr<USphereComponent> Sphere = {nullptr};
 	
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<USkeletalMeshComponent> Base = {nullptr};
+	TObjectPtr<USkeletalMeshComponent> Body = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<USkeletalMeshComponent> Tower = {nullptr};
+	TObjectPtr<USkeletalMeshComponent> Head = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<USpringArmComponent> SpringArmComponent = {nullptr};
@@ -53,13 +56,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UTankMovementComponent> TankMovement = {nullptr};
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
-	float MaxTowerTurningDegreePerSecond = 90.0f;
+	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
+	TObjectPtr<UFireProjectileComponent> FireProjectileComponent = {nullptr};
 
+	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
+	TObjectPtr<UProjectileOriginComponent> ProjectileOriginComponent = {nullptr};
 
+	// UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
+	// float MaxTowerTurningDegreePerSecond = 90.0f;
+
+	
 public:	
 	// void RequestAimAtTarget(const FVector& TargetLocation);
-	void RequestFire() const;
+	void RequestFire();
 private:
 	//InternValue
 	// FVector DesiredTowerAimLocation = FVector::ZeroVector;
@@ -77,6 +86,8 @@ public: //simple Getter Functions
 
 	TWeakObjectPtr<UTankMovementComponent> GetTankMovement() const;
 
+	TWeakObjectPtr<UFireProjectileComponent> GetFireProjectileComponent() const;
+
 	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
 	EDrivingState GetCurrentDrivingState() const;
 	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
@@ -90,6 +101,17 @@ public: //simple Getter Functions
 	float GetSlideDegree() const;
 	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
 	bool GetIsSliding() const;
+	
+	
+	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
+	bool GetHasEndlessAmmo() const;
+	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
+	int32 GetCurrentAmmo() const;
+	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
+	int32 GetMaxAmmo() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Tank|Body")
+	FString GetBodyName();
 
 	// FVector GetDesiredTargetRotation() const;
 };

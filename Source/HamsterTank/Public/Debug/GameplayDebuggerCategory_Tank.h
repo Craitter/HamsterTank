@@ -7,7 +7,7 @@
 #include "GameplayDebuggerCategory.h"
 
 
-enum class EDrivingState;
+enum class EDrivingState : uint8;
 class APlayerController;
 class AActor;
 

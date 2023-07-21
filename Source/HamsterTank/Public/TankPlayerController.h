@@ -55,7 +55,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> IMC_MK_Default = {nullptr};
 	
-	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UUserWidget> GameOverlay = {nullptr};
 private:
 	void RequestDriveCallback(const FInputActionValue& Value);
 
