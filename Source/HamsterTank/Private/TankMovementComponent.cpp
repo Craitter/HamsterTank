@@ -114,7 +114,7 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	else
 	{
 		SetDrivingValuesDependingOnState();
-		UpdateVelocity(DeltaTime);
+		Velocity = ComputeVelocity(DeltaTime);
 	}
 	ProcessUserDesiredRotation(DeltaTime);
 	
@@ -265,6 +265,59 @@ void UTankMovementComponent::UpdateComponentVelocity()
 	}
 }
 
+FVector UTankMovementComponent::PredictLocationAfterSeconds(const float Seconds,
+                                                         bool bPredictRotation) const
+{
+	if(!IsValid(UpdatedComponent))
+	{
+		UE_LOG(LogTemp, Warning , TEXT("Updated Component is Zero"));
+		return FVector::ZeroVector;
+	}
+	FVector TempVelocity = Velocity;
+	const float Steps = Seconds / 0.05;
+	float Step = 0;
+	const float TimeSizePerStep = Seconds / Steps;
+
+	FVector ForwardTemp = PawnOwner->GetActorForwardVector();
+	FVector DeltaLocation = FVector::ZeroVector;
+	do
+	{
+		FVector Force = ForwardTemp * CurrentDrivingForce * GetPendingInputVector().X;
+		
+		const float AccelerationDueToGravity = GetWorld()->GetGravityZ() / -100.0f; //Convert to cm
+		const float NormalForce = AccelerationDueToGravity * Mass;
+		Force += -TempVelocity.GetSafeNormal() * NormalForce *  RollingResistanceCoefficient;
+
+		
+		Step++;
+		//Applying Resistant Forces to the Engine Force
+		const float InDragCoefficient = CurrentDrivingForce / (CurrentMaxSpeed * CurrentMaxSpeed);
+		Force += -TempVelocity.GetSafeNormal() * TempVelocity.SizeSquared() * InDragCoefficient;
+	
+		//Create the Velocity / Update Velocity
+		const FVector Acceleration = Force / Mass;
+		
+		TempVelocity += Acceleration * TimeSizePerStep; // makes m/s from the acceleration which is m/s^2
+		
+		if(DrivingState != EDrivingState::DS_Idle && bPredictRotation)
+		{
+			const float DeltaTurn = FVector::DotProduct(ForwardTemp, TempVelocity) * TimeSizePerStep;
+			const float RotationAngle = DeltaTurn / MinTurningRadius * GetPendingInputVector().Y;
+			FQuat RotationDelta = FQuat(PawnOwner->GetActorUpVector(), RotationAngle);
+			TempVelocity = RotationDelta.RotateVector(TempVelocity);
+			ForwardTemp = RotationDelta.RotateVector(ForwardTemp);
+		}
+		
+		DeltaLocation += TempVelocity * 100.0f * TimeSizePerStep;
+	}
+	while (Step <= Steps);
+		
+	
+	const FVector StartLocation = UpdatedComponent->GetComponentLocation();
+	
+	return  StartLocation + DeltaLocation;
+}
+
 // bool UTankMovementComponent::ResolvePenetrationImpl(const FVector& Adjustment, const FHitResult& Hit,
 // 	const FQuat& NewRotation)
 // {
@@ -393,7 +446,7 @@ void UTankMovementComponent::SetDrivingValuesDependingOnState()
 	}
 }
 
-void UTankMovementComponent::UpdateVelocity(const float InDeltaTime)
+FVector UTankMovementComponent::ComputeVelocity(const float InDeltaTime) const
 {
 	FVector Force = PawnOwner->GetActorForwardVector() * CurrentDrivingForce * GetPendingInputVector().X;
 
@@ -403,7 +456,7 @@ void UTankMovementComponent::UpdateVelocity(const float InDeltaTime)
 
 	//Create the Velocity / Update Velocity
 	const FVector Acceleration = Force / Mass;
-	Velocity += Acceleration * InDeltaTime; // makes m/s from the acceleration which is m/s^2
+	return Velocity + Acceleration * InDeltaTime; // makes m/s from the acceleration which is m/s^2
 }
 
 

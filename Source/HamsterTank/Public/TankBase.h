@@ -62,8 +62,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UProjectileOriginComponent> ProjectileOriginComponent = {nullptr};
 
-	// UPROPERTY(EditDefaultsOnly, Category = "Tank|Aiming")
-	// float MaxTowerTurningDegreePerSecond = 90.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Fire")
+	TObjectPtr<UAnimMontage> FireMontage = {nullptr};
 
 	
 public:	

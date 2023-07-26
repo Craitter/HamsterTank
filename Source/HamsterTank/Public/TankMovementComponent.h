@@ -43,6 +43,7 @@ public:
 
 	// virtual bool ResolvePenetrationImpl(const FVector& Adjustment, const FHitResult& Hit, const FQuat& NewRotation) override;
 
+	FVector PredictLocationAfterSeconds(const float Seconds, bool bPredictRotation) const;
 protected:
 	virtual void BeginPlay() override;
 
@@ -122,7 +123,7 @@ private:
 	//Calculate Velocity Begin
 	FVector GetAirResistance() const;
 	FVector GetRollingResistance() const;
-	void UpdateVelocity(const float InDeltaTime);
+	FVector ComputeVelocity(const float InDeltaTime) const;
 	//Calculate Velocity End
 
 	//Adjust VelocityRotation

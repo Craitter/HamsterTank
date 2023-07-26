@@ -5,6 +5,7 @@
 
 #include "FireProjectileComponent.h"
 #include "ProjectileOriginComponent.h"
+#include "TankMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 
 
@@ -41,9 +42,10 @@ AObjectiveTower::AObjectiveTower()
 
 	FFireProjectileData NewDefault;
 	NewDefault.bApplyCooldown = true;
-	NewDefault.bApplySpread = true;
+	NewDefault.bApplySpread = false;
 	NewDefault.bRandomizeCooldown = true;
-	NewDefault.bRandomizeSpeed = true;
+	NewDefault.bRandomizeSpeed = false;
+	NewDefault.bApplyCustomSpeed = true;
 	NewDefault.FireCooldown = 1.0f;
 	NewDefault.MinCooldown = 0.9f;
 	NewDefault.MaxCooldown = 1.8f;
@@ -54,8 +56,7 @@ AObjectiveTower::AObjectiveTower()
 	
 	CurrentTurningTime = 0.0f;
 
-	bUseRandomFireType = true;
-	InternTowerFireType = ETowerFireType::None;
+	TowerFireType = ETowerFireType::OnTarget;
 
 	bIgnoreBlocksWhenLookForPlayer = true;
 
@@ -69,6 +70,15 @@ AObjectiveTower::AObjectiveTower()
 void AObjectiveTower::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if(TowerType != ETowerType::Custom)
+	{
+		bLoseTargetWhenOutOfFOV = false;
+		bNeedsUnblockedVisionToAimTargetForFiring = false;
+		bCanOnlyTargetLocationsInRotationRange = false;
+		bRestrainFOVToRotationRange = false;
+		bPredictRotatedLocation = false;
+	}
 	
 	OnPlayerFoundDelegateHandle.BindUObject(this, &ThisClass::OnPlayerFound);
 	OnSinRotationFinishedDelegateHandle.BindUObject(this, &ThisClass::OnSinRotationFinished);
@@ -84,12 +94,6 @@ void AObjectiveTower::BeginPlay()
 		InternTargetingOriginLocation = Tower->GetComponentLocation();
 		InternTargetingOriginLocation.Z = ProjectileOrigin->GetComponentLocation().Z;
 	}
-	if(!bUseRandomFireType)
-	{
-		InternTowerFireType = TowerFireType;
-	}
-
-
 }
 
 void AObjectiveTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -129,44 +133,36 @@ void AObjectiveTower::Tick(float DeltaTime)
 	}
 	else
 	{
-		if(InternTowerFireType == ETowerFireType::None)
-		{
-			InternTowerFireType = GetRandomFireType();
-		}
-		InternTowerFireType = ETowerFireType::OnTarget; //Temp for testing
-		const FVector AimTargetLocation = GetFireTargetLocation();
-		
-#if ENABLE_DRAW_DEBUG && !NO_CVARS
-		if(bDebug || CVarShowAllTowerTargeting->GetBool())
-		{
-			DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Orange);
-		}
-#endif
-		
 		if(IsStillTargeting())
 		{
+			SetDesiredTravelTime(GetDistanceToSelf2D(PlayerPawn->GetActorLocation()));
+			
+			const FVector AimTargetLocation = GetFireTargetLocation();
+			
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+			if(bDebug || CVarShowAllTowerTargeting->GetBool())
+			{
+				DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Orange);
+			}
+#endif
+			
 			if(IsAimTargetLocationValid(AimTargetLocation))
 			{
 				const FVector AimTargetDirection = AimTargetLocation - InternTargetingOriginLocation;
 				if(RotateToDesiredRotationAtDegreeRate(AimTargetDirection.Rotation(), DeltaTime, MaxTurningDegreePerSecondTargeting))
 				{
-					const float Distance = GetDistanceToSelf2D(AimTargetLocation);
-					const float DesiredProjectileTravelTime = GetDesiredTravelTime(Distance);
-					const float ProjectileSpeed = Distance / DesiredProjectileTravelTime;
+					const float ProjectileSpeed = GetDistanceToSelf2D(AimTargetLocation) / InternDesiredProjectileTravelTime;
 
 					FFireProjectileData Data;
 					FireProjectileComponent->GetDefaultProjectileData(Data);
 					Data.CustomSpeed = ProjectileSpeed;
+					FireProjectileComponent->SetDefaultFireProjectileData(Data);
 					if(FireProjectileComponent->TryFireProjectile(nullptr))
 					{
-						if(bUseRandomFireType)
-						{
-							InternTowerFireType = ETowerFireType::None;
-						}
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
 						if(bDebug || CVarShowAllTowerTargeting->GetBool())
 						{
-							DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Red, false, DesiredProjectileTravelTime + 0.5f);
+							DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Red, false, InternDesiredProjectileTravelTime + 0.5f);
 						}
 #endif
 					}
@@ -205,7 +201,7 @@ void AObjectiveTower::Tick(float DeltaTime)
 		for(int32 i = 0; i < FOV; i++)
 		{
 			FVector NewDirection = FRotator(0.0f, -i, 0.0f).RotateVector(StartDirection);
-			if(bRestrainFOVToRotationRange)
+			if(bRestrainFOVToRotationRange || TowerType == ETowerType::OnTargetOnlyRotationRange)
 			{
 				if(FMath::RadiansToDegrees(NewDirection.Rotation().Quaternion().AngularDistance(GetActorForwardVector().Rotation().Quaternion())) > IdleRotationRange / 2)
 				{
@@ -277,7 +273,7 @@ void AObjectiveTower::LookForPlayer(const FVector& StartLocation)
 	QueryParams.bIgnoreBlocks = bIgnoreBlocksWhenLookForPlayer;
 	QueryParams.AddIgnoredActor(this);
 	
-	World->SweepMultiByProfile(Results, StartLocation, EndLocation, FQuat::Identity, LookForPlayerProfile.Name, CollisionShape, QueryParams);
+	World->SweepMultiByProfile(Results, StartLocation, EndLocation, FQuat::Identity, LookForPlayerCollisionProfileName.Name, CollisionShape, QueryParams);
 
 	for (const FHitResult& Result : Results)
 	{
@@ -338,32 +334,19 @@ bool AObjectiveTower::IsStillTargeting() const
 		{
 			return false;
 		}
-		if(bLoseTargetWhenOutOfFOV && !IsLocationInFieldOfView(InternTargetingOriginLocation,AdjustedPawnLocation))
+		FHitResult Result;
+		TryTargetLocation(InternTargetingOriginLocation, AdjustedPawnLocation, Result);
+		if(Result.bBlockingHit && Result.GetActor() != PlayerPawn)
 		{
 			return false;
 		}
-		if(bNeedsUnblockedPlayerVisionStayInTargetingState)
+		if((TowerType == ETowerType::OnTargetOnlyRotationRange || TowerType == ETowerType::OnTargetOnlyFOV || bLoseTargetWhenOutOfFOV) && !IsLocationInFieldOfView(InternTargetingOriginLocation,AdjustedPawnLocation))
 		{
-			FHitResult Result;
-			TryTargetLocation(InternTargetingOriginLocation, AdjustedPawnLocation, Result);
-			if(Result.bBlockingHit && Result.GetActor() != PlayerPawn)
-			{
-				return false;
-			}
+			return false;
 		}
 		return true;
 	}
 	return false;
-}
-
-ETowerFireType AObjectiveTower::GetRandomFireType()
-{
-	if(!bUseRandomFireType)
-	{
-		UE_LOG(LogTemp, Error , TEXT("SHOULDNT BE CALLED"));
-	}
-	uint8 n = FMath::RandRange(static_cast<int>(ETowerFireType::None) + 1, static_cast<int>(ETowerFireType::Max) - 1);
-	return static_cast<ETowerFireType>(n);
 }
 
 bool AObjectiveTower::ShouldSkipUpdate()
@@ -371,13 +354,14 @@ bool AObjectiveTower::ShouldSkipUpdate()
 	return !IsValid(ProjectileOrigin) && !IsValid(Tower) && !IsValid(GetWorld());
 }
 
-float AObjectiveTower::GetDesiredTravelTime(float InDistance) const
+void AObjectiveTower::SetDesiredTravelTime(float InDistance)
 {
 	if(DistanceToTravelTimeCurve.GetRichCurveConst() != nullptr)
 	{		
-		return DistanceToTravelTimeCurve.GetRichCurveConst()->Eval(InDistance);
+		InternDesiredProjectileTravelTime = DistanceToTravelTimeCurve.GetRichCurveConst()->Eval(InDistance);
+		return;
 	}
-	return 1.0f;
+	InternDesiredProjectileTravelTime = 1.0f;
 }
 
 void AObjectiveTower::RotateTowerSin(const float AverageDegreePerSecond, const float DeltaTime)
@@ -407,19 +391,20 @@ FVector AObjectiveTower::GetFireTargetLocation()
 	}
 	FVector OutTargetLocation = FVector::ZeroVector;
 	
-	
 	const FVector PlayerLocation = PlayerPawn->GetActorLocation();
-	if(InternTowerFireType == ETowerFireType::OnTarget)
+	
+	if(TowerFireType == ETowerFireType::Predicted || TowerType == ETowerType::FullyPredicted || TowerType == ETowerType::LocationPredicted)
+	{
+		const TWeakObjectPtr<UTankMovementComponent> TankMovementComponent = Cast<UTankMovementComponent>(PlayerPawn->GetMovementComponent());
+		if(TankMovementComponent.IsValid())
+		{
+			const bool bOutPredictRotation = (TowerType == ETowerType::FullyPredicted || bPredictRotatedLocation);
+			OutTargetLocation = TankMovementComponent->PredictLocationAfterSeconds(InternDesiredProjectileTravelTime, bOutPredictRotation);
+		}
+	}
+	else
 	{
 		OutTargetLocation = PlayerLocation;
-	}
-	else if(InternTowerFireType == ETowerFireType::Predicted)
-	{
-		//Todo:Do Sick Prediction in MovementComponent
-	}
-	else if(InternTowerFireType == ETowerFireType::Salve)
-	{
-		//Todo: Make Salve?
 	}
 	OutTargetLocation.Z = InternTargetingOriginLocation.Z;
 	return OutTargetLocation;
@@ -448,7 +433,7 @@ bool AObjectiveTower::IsAimTargetLocationValid(const FVector& AimTargetLocation)
 {
 	if(IsValid(Tower))
 	{
-		if(bNeedsUnblockedVisionToAimTargetForFiring)
+		if(bNeedsUnblockedVisionToAimTargetForFiring || TowerType == ETowerType::OnTarget || TowerType == ETowerType::OnTargetOnlyRotationRange || TowerType == ETowerType::OnTargetOnlyFOV)
 		{
 			FHitResult Result;
 			TryTargetLocation(InternTargetingOriginLocation, AimTargetLocation, Result);
@@ -457,7 +442,7 @@ bool AObjectiveTower::IsAimTargetLocationValid(const FVector& AimTargetLocation)
 				return false;
 			}
 		}
-		if(bCanOnlyTargetLocationsInRotationRange)
+		if(bCanOnlyTargetLocationsInRotationRange || TowerType == ETowerType::OnTargetOnlyRotationRange)
 		{
 			const FVector AimTargetDirection = AimTargetLocation - InternTargetingOriginLocation;
 			const FQuat TargetQuaternion = AimTargetDirection.Rotation().Quaternion();
@@ -473,5 +458,5 @@ bool AObjectiveTower::IsAimTargetLocationValid(const FVector& AimTargetLocation)
 
 float AObjectiveTower::GetDistanceToSelf2D(const FVector& InLocation) const
 {
-	return FVector::Dist2D(InLocation, InternTargetingOriginLocation);
+	return FVector::Dist2D(InLocation, ProjectileOrigin->GetComponentLocation());
 }

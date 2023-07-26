@@ -12,14 +12,53 @@ class UFireProjectileComponent;
 
 UENUM(BlueprintType)
 enum class ETowerFireType : uint8
-{
-	None,
-	
+{	
 	OnTarget,
 
 	Predicted,
 
-	Salve,
+	Max				UMETA(Hidden),
+};
+
+UENUM(BlueprintType)
+enum class ETowerType : uint8
+{
+	//bLoseTargetWhenOutOfFOV = false;
+	//bNeedsUnblockedVisionToAimTargetForFiring = true;
+	//bCanOnlyTargetLocationsInRotationRange = false;
+	//bRestrainFOVToRotationRange = false;
+	//bPredictRotatedLocation = false;
+	OnTarget,
+	
+	//bLoseTargetWhenOutOfFOV = true;
+	//bNeedsUnblockedVisionToAimTargetForFiring = true;
+	//bCanOnlyTargetLocationsInRotationRange = true;
+	//bRestrainFOVToRotationRange = true;
+	//bPredictRotatedLocation = false;
+	OnTargetOnlyRotationRange,
+
+	//bLoseTargetWhenOutOfFOV = true;
+	//bNeedsUnblockedVisionToAimTargetForFiring = true;
+	//bCanOnlyTargetLocationsInRotationRange = false;
+	//bRestrainFOVToRotationRange = false;
+	//bPredictRotatedLocation = false;
+	OnTargetOnlyFOV,
+	
+	//bLoseTargetWhenOutOfFOV = false;
+	//bNeedsUnblockedVisionToAimTargetForFiring = false;
+	//bCanOnlyTargetLocationsInRotationRange = false;
+	//bRestrainFOVToRotationRange = false;
+	//bPredictRotatedLocation = true;
+	FullyPredicted,
+
+	//bLoseTargetWhenOutOfFOV = false;
+	//bNeedsUnblockedVisionToAimTargetForFiring = false;
+	//bCanOnlyTargetLocationsInRotationRange = false;
+	//bRestrainFOVToRotationRange = false;
+	//bPredictRotatedLocation = false;
+	LocationPredicted,
+
+	Custom,
 
 	Max				UMETA(Hidden),
 };
@@ -93,8 +132,8 @@ protected:
 	float FOV = 30.0f;
 	//The Collision Profile we use to find Targets in LookForPlayer(), make sure to use something that is only really
 	//detecting Targets because we check later on if we can target the target
-	UPROPERTY(EditAnywhere, Category = "Tower|Targeting")
-	FCollisionProfileName LookForPlayerProfile;
+	UPROPERTY(EditAnywhere, Category = "Tower")
+	FCollisionProfileName LookForPlayerCollisionProfileName;
 	//If LookForPlayerProfile needs blocking hits to work, this will enable them on that trace, it is set false by
 	//default because the default profile is a profile that only overlaps with possible targets so we dont need blocks
 	UPROPERTY(EditAnywhere, Category = "Tower|Targeting")
@@ -102,37 +141,36 @@ protected:
 	//The Radius we look for targets and the max distance we track targets
 	UPROPERTY(EditAnywhere, Category = "Tower|Targeting", meta = (ClampMin = "0", ClampMax = "10000", Units = "cm"))
 	float MaxTrackDistance = 3000.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Tower|Targeting")
+	ETowerType TowerType = ETowerType::OnTarget;
+	
 	//It would make sense to switch this of, but at the same time do we really want to lose targets when the dive by and we do not rotate fast enough?
 	//really depends on the desired behaviour and on MaxTurningDegreePerSecondTargeting
-	UPROPERTY(EditAnywhere, Category = "Tower|Targeting|Behavior")
+	UPROPERTY(EditAnywhere, Category = "Tower|Behaviour", meta = (EditCondition = "TowerType == ETowerType::Custom", EditConditionHides))
 	bool bLoseTargetWhenOutOfFOV = false;
 	//When we calculate a TargetLocation, do we want to fire anyway of wait until the
 	//bullet will defenetely reach the destination, needs to be checked by design when this is right to be true and when it will be false
-	UPROPERTY(EditAnywhere, Category = "Tower|Targeting|Behavior")
+	UPROPERTY(EditAnywhere, Category = "Tower|Behaviour", meta = (EditCondition = "TowerType == ETowerType::Custom", EditConditionHides))
 	bool bNeedsUnblockedVisionToAimTargetForFiring = false;
-	//This should  never be false with bNeedsUnblockedVisionToAimTargetForFiring because then it can easily
-	//feel like the tower knows where the player is even though it doesnt, we wont
-	//lose targets easily since we have a delay before going back to idle
-	UPROPERTY(EditAnywhere, Category = "Tower|Targeting|Behavior")
-	bool bNeedsUnblockedPlayerVisionStayInTargetingState = true;
 	//This is useful for balancing a tower and also if a mesh does not allow more rotation because it would look odd...
-	UPROPERTY(EditAnywhere, Category = "Tower|Targeting|Behavior")
+	UPROPERTY(EditAnywhere, Category = "Tower|Behaviour", meta = (EditCondition = "TowerType == ETowerType::Custom", EditConditionHides))
 	bool bCanOnlyTargetLocationsInRotationRange = false;
 	//This is extending on bCanOnlyTargetLocationsInRotationRange it will only allow targets to be recognized
 	//within the RotationRange Cone
-	UPROPERTY(EditAnywhere, Category = "Tower|Targeting|Behavior")
+	UPROPERTY(EditAnywhere, Category = "Tower|Behaviour", meta = (EditCondition = "TowerType == ETowerType::Custom", EditConditionHides))
 	bool bRestrainFOVToRotationRange = false;
-	
+	//If the right and left input of the tank should be included into the calculation, can be useful at a outer corner turret
+	UPROPERTY(EditAnywhere, Category = "Tower|Behaviour", meta = (EditCondition = "TowerType == ETowerType::Custom", EditConditionHides))
+	bool bPredictRotatedLocation = false;
+	//When bUseRandomFireType is true we can set a TowerFireType here, if we set it to none, it will take a random
+	//one at first and then stick with it
+	UPROPERTY(EditAnywhere, Category = "Tower|Behaviour", meta = (EditCondition = "TowerType == ETowerType::Custom", EditConditionHides))
+	ETowerFireType TowerFireType;
+
 	//The Curve will determine the speed the projectile will have when fired depending on Distance to Target(Todo:Define the x and Y axis UPROPERTY)
 	UPROPERTY(EditAnywhere, Category = "Tower|Projectile")
 	FRuntimeFloatCurve DistanceToTravelTimeCurve;
-	//if we should determine a random fire type after every shot or if we should stay with one see TowerFireType
-	UPROPERTY(EditAnywhere, Category = "Tower|Projectile")
-	bool bUseRandomFireType;
-	//When bUseRandomFireType is true we can set a TowerFireType here, if we set it to none, it will take a random
-	//one at first and then stick with it
-	UPROPERTY(EditAnywhere, Category = "Tower|Projectile", meta = (EditCondition = "!bUseRandomFireType"))
-	ETowerFireType TowerFireType;
 	
 	UPROPERTY(EditAnywhere, Category = "Tower")
 	bool bDebug;
@@ -159,11 +197,6 @@ protected:
 	 * @return The TargetLocation
 	 */
 	virtual FVector GetFireTargetLocation();
-	/**
-	 * @brief non weighted Randomization for FireTypes
-	 * @return A RandomFireType
-	 */
-	virtual ETowerFireType GetRandomFireType();
 
 
 	/**
@@ -173,11 +206,10 @@ protected:
 	 */
 	float GetDistanceToSelf2D(const FVector& InLocation) const;
 	/**
-	 * @brief Tries Accessing the FRuntimeFloatCurve to get the Desired TravelTime Depending on Distance
+	 * @brief Tries Accessing the FRuntimeFloatCurve to get the Desired TravelTime Depending on Distance, sets InternDesiredProjectileTravelTime
 	 * @param InDistance The Depending Distance
-	 * @return The DesiredTravelTime of the Projectile
 	 */
-	float GetDesiredTravelTime(float InDistance) const;
+	void SetDesiredTravelTime(float InDistance);
 
 	/**
 	 * @brief Helper Function to Slerp the tower to a desired Rotation at a fixed DegreePerSecond (Always Shortest Path) Can Easily cope with Desired Rotation Changes while updating
@@ -187,8 +219,6 @@ protected:
 	 * @return true when the DesiredRotation has been Reached
 	 */
 	bool RotateToDesiredRotationAtDegreeRate(const FRotator& DesiredRotation, const float DeltaTime, const float DesiredMaxDegreePerSecond) const;
-	
-	ETowerFireType InternTowerFireType;
 private:
 	
 	/**
@@ -251,6 +281,7 @@ private:
 	FRotator SinStartRotation;
 	FRotator SinEndRotation;
 
+	float InternDesiredProjectileTravelTime = 0.0f;
 	//This property has the Z Location from the ProjectileOriginComponent and the X and Y from the Tower Location,
 	//so we trace at the right height, this is espacially useful when the rotation tower has its root at 0 instead of the center of the rotating tower
 	FVector InternTargetingOriginLocation = FVector::ZeroVector;

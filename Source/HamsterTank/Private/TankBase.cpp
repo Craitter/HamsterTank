@@ -10,6 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 
 
 // Sets default values
@@ -85,6 +86,7 @@ void ATankBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	// UpdateTowerRotation(DeltaTime);
+	
 }
 
 
@@ -101,7 +103,10 @@ void ATankBase::RequestFire()
 {
 	if(IsValid(Head) && IsValid(Controller) && IsValid(FireProjectileComponent))
 	{
-		FireProjectileComponent->TryFireProjectile(this);
+		if(FireProjectileComponent->TryFireProjectile(this))
+		{
+			Body->GetAnimInstance()->Montage_Play(FireMontage);
+		}
 		
 		const FVector StartLocation = Head->GetComponentLocation();
 		constexpr float Distance =  1000.0f;

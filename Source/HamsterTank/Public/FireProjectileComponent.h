@@ -36,6 +36,12 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Cooldown")
 	float FireCooldown = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	bool bApplyCustomSpeed = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	float CustomSpeed = -1.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "Speed")
 	bool bRandomizeSpeed = false;
@@ -46,8 +52,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Speed")
 	float InMaxSpeedModifier = 1.0f;
 	
-	UPROPERTY(EditAnywhere, Category = "Speed")
-	float CustomSpeed = -1.0f;
+	
 	
 };
 

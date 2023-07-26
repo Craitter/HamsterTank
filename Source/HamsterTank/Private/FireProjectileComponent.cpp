@@ -44,14 +44,19 @@ AProjectileBase* UFireProjectileComponent::TryFireProjectile(APawn* InstigatorPa
 	const TWeakObjectPtr<AProjectileBase> NewProjectile = GetWorld()->SpawnActor<AProjectileBase>(BaseProjectile, ProjectileOrigin->GetComponentLocation(), SpawnRotation, SpawnParameters);
 	if(NewProjectile.IsValid())
 	{
-		if(FireData.CustomSpeed > 0.0f)
+		const TWeakObjectPtr<UTankProjectileMovementComponent> TankProjectileMovementComponent = NewProjectile->GetProjectileMovementComponent();
+		if(TankProjectileMovementComponent.IsValid())
 		{
-			const TWeakObjectPtr<UTankProjectileMovementComponent> TankProjectileMovementComponent = NewProjectile->GetProjectileMovementComponent();
-			if(TankProjectileMovementComponent.IsValid())
+			float OutSpeed = TankProjectileMovementComponent->Velocity.Size();
+			if(FireData.bApplyCustomSpeed && FireData.CustomSpeed > 0.0f)
 			{
-				const float OutSpeedModifier = FireData.bRandomizeSpeed ? FMath::FRandRange(FireData.InMinSpeedModifier, FireData.InMaxSpeedModifier) : 1.0f;
-				TankProjectileMovementComponent->SetVelocityInLocalSpace(FVector(FireData.CustomSpeed * OutSpeedModifier, 0.0f, 0.0f));
+				OutSpeed = FireData.CustomSpeed;
 			}
+			if(FireData.bRandomizeSpeed)
+			{
+				OutSpeed *= FMath::FRandRange(FireData.InMinSpeedModifier, FireData.InMaxSpeedModifier);
+			}
+			TankProjectileMovementComponent->SetVelocityInLocalSpace(FVector(OutSpeed, 0.0f, 0.0f));
 		}
 		if(FireData.bApplyCooldown)
 		{
