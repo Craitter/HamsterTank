@@ -111,6 +111,10 @@ void UCameraMod_TranslucentObstacles::AddedToCamera(APlayerCameraManager* Camera
 	Super::AddedToCamera(Camera);
 	OnHideBlockingActorDelegateHandle.BindStatic(OnCameraObstacleBlocksView);
 	OnBlockingActorDisappearedDelegateHandle.BindStatic(OnCameraObstacleStopsBlockingView);
+
+	check(GetWorld())
+
+	GetWorld()->GetTimerManager().SetTimer(CleanCachedHitsTimerHandle, this, &ThisClass::SafeClearCachedHits, LoopTimeCacheClear, true);
 }
 
 void UCameraMod_TranslucentObstacles::BeginDestroy()
@@ -211,7 +215,6 @@ void UCameraMod_TranslucentObstacles::CameraObstacleHit(const TWeakObjectPtr<AAc
 			}
 #endif
 		}
-		return;
 	}
 	else
 	{
@@ -232,7 +235,7 @@ void UCameraMod_TranslucentObstacles::CameraObstacleHit(const TWeakObjectPtr<AAc
 			MaterialInterfaces = Mesh->GetMaterials();
 		}
 		ExistingObstacle.bIsHidden = true;
-		CameraBlockingActors.Add(ObstacleActor, ExistingObstacle);
+		// CameraBlockingActors.Add(ObstacleActor, ExistingObstacle);
 		OnHideBlockingActorDelegateHandle.Execute(ExistingObstacle, TranslucentMaterial);
 	}
 }
@@ -270,5 +273,21 @@ void UCameraMod_TranslucentObstacles::ForceShowAllCameraObstacles()
 		{
 			CameraObstacleIsGone(Obstacle.Value);
 		}
+	}
+}
+
+void UCameraMod_TranslucentObstacles::SafeClearCachedHits()
+{
+	TArray<TWeakObjectPtr<AActor>> KeysToRemove;
+	for(const auto& Obstacle : CameraBlockingActors)
+	{
+		if(!Obstacle.Value.bIsHidden)
+		{
+			KeysToRemove.Add(Obstacle.Key);
+		}
+	}
+	for (const TWeakObjectPtr<AActor> ToRemove : KeysToRemove)
+	{
+		CameraBlockingActors.Remove(ToRemove);
 	}
 }

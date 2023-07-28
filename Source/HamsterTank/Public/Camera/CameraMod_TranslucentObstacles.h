@@ -59,6 +59,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Transparency")
 	bool bUseCollisionSphereRadiusAnyway = false;
 
+	UPROPERTY(EditAnywhere, Category = "Translucence")
+	float LoopTimeCacheClear = 5.0f;
+	
 	FOnHideBlockingActorDelegate OnHideBlockingActorDelegateHandle;
 	FOnBlockingActorDisappearedDelegate OnBlockingActorDisappearedDelegateHandle;
 private:
@@ -74,9 +77,13 @@ private:
 
 	void ForceShowAllCameraObstacles();
 
+	void SafeClearCachedHits();
+
 	TWeakObjectPtr<AActor> CachedViewTarget = {nullptr};
 	
 	TMap<TWeakObjectPtr<AActor>, FTranslucentCameraObstacle> CameraBlockingActors;
 
 	float CollisionSphereRadius = -1.0f;
+
+	FTimerHandle CleanCachedHitsTimerHandle;
 };
