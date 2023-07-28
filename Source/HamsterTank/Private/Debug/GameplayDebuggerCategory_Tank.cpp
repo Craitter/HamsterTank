@@ -2,8 +2,10 @@
 
 #include "Debug/GameplayDebuggerCategory_Tank.h"
 
+
+
 #if WITH_GAMEPLAY_DEBUGGER
-#include "TankBase.h"
+#include "Actors/TankBase.h"
 
 FGameplayDebuggerCategory_Tank::FGameplayDebuggerCategory_Tank()
 {

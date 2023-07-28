@@ -64,7 +64,7 @@ private:
 
 	void RequestAimCallback(const FInputActionValue& Value);
 
-	bool bAddControlRotation = false;
+	void OnPlayerDied();
 
 	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
 	TWeakObjectPtr<ATankBase> TankPawn = {nullptr};

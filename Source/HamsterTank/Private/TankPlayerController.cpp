@@ -5,8 +5,10 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "TankBase.h"
 #include "Blueprint/UserWidget.h"
+
+#include "Actors/TankBase.h"
+#include "Components/HealthComponent.h"
 
 
 ATankPlayerController::ATankPlayerController()
@@ -45,7 +47,11 @@ void ATankPlayerController::OnPossess(APawn* InPawn)
 	TankPawn = CastChecked<ATankBase>(InPawn);
 	if(TankPawn.IsValid())
 	{
-		
+		const TWeakObjectPtr<UHealthComponent> PawnHealthComponent = TankPawn->FindComponentByClass<UHealthComponent>();
+		if(PawnHealthComponent.IsValid())
+		{
+			PawnHealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnPlayerDied);
+		}
 	}
 	const TWeakObjectPtr<UUserWidget> Widget = CreateWidget<UUserWidget>(this, GameOverlay);
 	if(Widget.IsValid())
@@ -128,9 +134,13 @@ void ATankPlayerController::RequestAimCallback(const FInputActionValue& Value)
 	if(TankPawn.IsValid())
 	{
 		const TWeakObjectPtr<USceneComponent> Tower = TankPawn->GetTower();
-		if(Tower.IsValid())
+		// const TWeakObjectPtr<USpringArmComponent> SpringArm = TankPawn->GetSpringArm();
+		if(Tower.IsValid()) //&& SpringArm.IsValid())
 		{
-			Tower->AddRelativeRotation(FRotator(0.0, Value.Get<float>(), 0.0f));
+			// Tower->AddRelativeRotation(FRotator(0.0f, Value.Get<float>(), 0.0f));
+			AddYawInput(Value.Get<float>());
+			
+			// SpringArm->AddRelativeRotation(FRotator(0.0, Value.Get<float>(), 0.0f));
 		}
 		
 	}
@@ -138,5 +148,11 @@ void ATankPlayerController::RequestAimCallback(const FInputActionValue& Value)
 	{
 		UE_LOG(LogTemp, Warning , TEXT("%s %s() No Valid Pawn to Forward Input to"), *UEnum::GetValueAsString(GetLocalRole()), *FString(__FUNCTION__));
 	}
+}
+
+void ATankPlayerController::OnPlayerDied()
+{
+	DisableInput(this);
+	//todo restart/open menu
 }
 

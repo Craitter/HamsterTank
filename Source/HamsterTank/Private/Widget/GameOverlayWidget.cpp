@@ -3,8 +3,9 @@
 
 #include "Widget/GameOverlayWidget.h"
 
-#include "FireProjectileComponent.h"
+
 #include "Components/DynamicEntryBox.h"
+#include "Components/FireProjectileComponent.h"
 #include "Widget/BulletIconWidget.h"
 
 void UGameOverlayWidget::NativePreConstruct()
