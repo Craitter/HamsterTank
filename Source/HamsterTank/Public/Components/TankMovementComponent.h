@@ -41,6 +41,7 @@ public:
 	//Overriden to multiply by 100 to make cm/s instead of m/s
 	virtual void UpdateComponentVelocity() override;
 
+	virtual bool ShouldSkipUpdate(float DeltaTime) const override;
 	// virtual bool ResolvePenetrationImpl(const FVector& Adjustment, const FHitResult& Hit, const FQuat& NewRotation) override;
 
 	FVector PredictLocationAfterSeconds(const float Seconds, bool bPredictRotation) const;
@@ -59,7 +60,7 @@ protected:
 
 	//Right now this applies to the tank when it is driving, so we have a constant turning radius, this mirrors a car behavior
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Steering", meta = (ClampMin="1.0", UIMin="1.0", ForceUnits="m"))
-	float MinTurningRadius = 6.0f;
+	FRuntimeFloatCurve SpeedTurningCurve;
 	
 	//The Mass is used to calculate the Force depending on the ConstantAcceleration
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Physics", meta = (ClampMin="1.0", UIMin="1.0", ForceUnits="Kg"))
@@ -121,9 +122,10 @@ private:
 	
 
 	//Calculate Velocity Begin
-	FVector GetAirResistance() const;
-	FVector GetRollingResistance() const;
-	FVector ComputeVelocity(const float InDeltaTime) const;
+	FVector GetAirResistance(const FVector& InVelocity) const;
+	FVector GetRollingResistance(const FVector& InVelocity) const;
+	float GetMinTurningRadius(float Speed) const;
+	void ComputeVelocity(const float InDeltaTime, FVector& InVelocity) const;
 	//Calculate Velocity End
 
 	//Adjust VelocityRotation
@@ -147,7 +149,8 @@ public: //Simple Getters;
 private: // Debug Callback(s)
 #if ENABLE_DRAW_DEBUG
 	static void OnToggleAllDebug(IConsoleVariable* ConsoleVariable);
-	
+
+	void DrawTickDebug() const;
 	// void OnTogglePlayerDebug(IConsoleVariable* ConsoleVariable);
 	//
 	// void OnToggleAIDebug(IConsoleVariable* ConsoleVariable);

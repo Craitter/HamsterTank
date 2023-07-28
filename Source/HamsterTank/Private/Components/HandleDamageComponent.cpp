@@ -39,9 +39,7 @@ void UHandleDamageComponent::OnOwnerTakePointDamage(AActor* DamagedActor, float 
 	{
 		return;
 	}
-	// LastHitDirection = ShotFromDirection.GetSafeNormal2D() * -1.0f;
 	const FVector ForwardVector = Owner->GetActorForwardVector();
-	UE_LOG(LogTemp, Warning , TEXT("fwd %s"), *ForwardVector.ToString());
 	const float DeltaFwd = ForwardVector.Dot(ShotFromDirection);
 	const float Degree = FMath::RadiansToDegrees(acos(abs(DeltaFwd)));
 	

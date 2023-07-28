@@ -100,15 +100,14 @@ void AEnemyTower::BeginPlay()
 	OnSinRotationFinishedDelegateHandle.BindUObject(this, &ThisClass::OnSinRotationFinished);
 
 	const FRotator ActorRotation = GetActorRotation();
-	RotationRangeUpperBound = FRotator(ActorRotation.Pitch, ActorRotation.Yaw + IdleRotationRange/2, ActorRotation.Roll);
-	RotationRangeLowerBound = FRotator(ActorRotation.Pitch, ActorRotation.Yaw - IdleRotationRange/2, ActorRotation.Roll);
+	RotationRangeUpperBound = FRotator(ActorRotation.Pitch, ActorRotation.Yaw + GetIdleRotationRange()/2, ActorRotation.Roll);
+	RotationRangeLowerBound = FRotator(ActorRotation.Pitch, ActorRotation.Yaw - GetIdleRotationRange()/2, ActorRotation.Roll);
 	if(IsValid(Tower) && IsValid(ProjectileOrigin))
 	{
-		SinStartRotation = Tower->GetComponentRotation();
-		SinEndRotation = RotationRangeLowerBound;
+		SetSinStartEndRotation(Tower->GetComponentRotation(), RotationRangeLowerBound);
 
-		InternTargetingOriginLocation = Tower->GetComponentLocation();
-		InternTargetingOriginLocation.Z = ProjectileOrigin->GetComponentLocation().Z;
+		InternOriginLocation = Tower->GetComponentLocation();
+		InternOriginLocation.Z = ProjectileOrigin->GetComponentLocation().Z;
 	}
 
 	if(IsValid(HealthComponent))
@@ -119,6 +118,10 @@ void AEnemyTower::BeginPlay()
 
 void AEnemyTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if(IsValid(HealthComponent))
+	{
+		HealthComponent->OnDeathDelegateHandle.RemoveAll(this);
+	}
 	OnSinRotationFinishedDelegateHandle.Unbind();
 	OnPlayerFoundDelegateHandle.Unbind();
 	Super::EndPlay(EndPlayReason);
@@ -126,49 +129,45 @@ void AEnemyTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AEnemyTower::UpdateTargeting(const float DeltaTime)
 {
+	if(VerifyTargetValid())
 	{
-		if(IsStillTargeting())
+		float ProjectileSpeed;
+		FVector AimTargetLocation;
+		GetFireTargetLocation(TargetPawn->GetActorLocation(), AimTargetLocation, ProjectileSpeed);
+		
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+		if(bDebug || CVarShowAllTowerTargeting->GetBool())
 		{
-			SetDesiredTravelTime(GetDistanceToSelf2D(TargetPawn->GetActorLocation()));
-			
-			const FVector AimTargetLocation = GetFireTargetLocation();
-			
-#if ENABLE_DRAW_DEBUG && !NO_CVARS
-			if(bDebug || CVarShowAllTowerTargeting->GetBool())
-			{
-				DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Orange);
-			}
+			DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Orange);
+		}
 #endif
-			
-			if(IsAimTargetLocationValid(AimTargetLocation))
+		
+		if(IsAimTargetLocationValid(AimTargetLocation))
+		{
+			const FVector AimTargetDirection = AimTargetLocation - InternOriginLocation;
+			if(RotateToDesiredRotationAtDegreeRate(AimTargetDirection.Rotation(), DeltaTime, MaxTurningDegreePerSecondTargeting))
 			{
-				const FVector AimTargetDirection = AimTargetLocation - InternTargetingOriginLocation;
-				if(RotateToDesiredRotationAtDegreeRate(AimTargetDirection.Rotation(), DeltaTime, MaxTurningDegreePerSecondTargeting))
-				{
-					const float ProjectileSpeed = GetDistanceToSelf2D(AimTargetLocation) / InternDesiredProjectileTravelTime;
 
-					FFireProjectileData Data;
-					FireProjectileComponent->GetDefaultProjectileData(Data);
-					Data.CustomSpeed = ProjectileSpeed;
-					FireProjectileComponent->SetDefaultFireProjectileData(Data);
-					if(FireProjectileComponent->TryFireProjectile(nullptr))
-					{
+				FFireProjectileData Data;
+				FireProjectileComponent->GetDefaultProjectileData(Data);
+				Data.CustomSpeed = ProjectileSpeed;
+				if(FireProjectileComponent->TryFireProjectile(nullptr, Data))
+				{
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-						if(bDebug || CVarShowAllTowerTargeting->GetBool())
-						{
-							DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Red, false, InternDesiredProjectileTravelTime + 0.5f);
-						}
-#endif
+					if(bDebug || CVarShowAllTowerTargeting->GetBool())
+					{
+						DrawDebugSphere(GetWorld(), AimTargetLocation, 30.0f, 10.0f, FColor::Red, false, GetDesiredProjectileTravelTime(AimTargetLocation) + 0.5f);
 					}
+#endif
 				}
 			}
 		}
-		else
-		{
-			TargetPawn = nullptr;
-			TowerTargetingState = ETowerTargetingState::TargetOutOfView;
-			GetWorldTimerManager().SetTimer(WaitForTargetReappearHandle, this, &ThisClass::OnTargetLost, TimeBeforeRotatingBackToIdle);
-		}
+	}
+	else
+	{
+		TargetPawn = nullptr;
+		TowerTargetingState = ETowerTargetingState::TargetOutOfView;
+		GetWorldTimerManager().SetTimer(WaitForTargetReappearHandle, this, &ThisClass::OnTargetLost, TimeBeforeRotatingBackToIdle);
 	}
 }
 
@@ -182,15 +181,6 @@ void AEnemyTower::Tick(float DeltaTime)
 		return;
 	}
 
-#if ENABLE_DRAW_DEBUG && !NO_CVARS
-	if(bDebug || CVarShowAllTowerTargeting->GetBool())
-	{
-		DrawDebugCircleArc(GetWorld(), InternTargetingOriginLocation, MaxTrackDistance, GetActorForwardVector(), FMath::DegreesToRadians(IdleRotationRange/2), 20.0f, FColor::Yellow);
-		DrawDebugLine(GetWorld(), InternTargetingOriginLocation, RotationRangeUpperBound.Vector() * MaxTrackDistance + InternTargetingOriginLocation, FColor::Yellow);
-		DrawDebugLine(GetWorld(), InternTargetingOriginLocation, RotationRangeLowerBound.Vector() * MaxTrackDistance + InternTargetingOriginLocation, FColor::Yellow);
-	}
-#endif
-
 	switch (TowerTargetingState)
 	{
 		case ETowerTargetingState::Idle:
@@ -200,51 +190,17 @@ void AEnemyTower::Tick(float DeltaTime)
 				RotateTowerSin(InMaxAverageDegreePerSecond, DeltaTime);
 			}
 		case ETowerTargetingState::TargetOutOfView:
-			LookForPlayer(InternTargetingOriginLocation);	
+			LookForPlayer();	
 			break;
 		case ETowerTargetingState::Targeting:
 			UpdateTargeting(DeltaTime);
 		break;
 	default: ;
 	}
-
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-	if(bDebug || CVarShowAllTowerTargeting->GetBool())
-	{
-		FColor DebugColor;
-		switch (TowerTargetingState)
-		{
-		case ETowerTargetingState::Idle:
-				DebugColor = FColor::Green;
-				break;
-		case ETowerTargetingState::Targeting:
-				DebugColor = FColor::Red;
-				break;
-		case ETowerTargetingState::TargetOutOfView:
-				DebugColor = FColor::Orange;
-				break;
-		case ETowerTargetingState::TargetLost:
-				DebugColor = FColor::Magenta;
-				break;
-			default: ;
-		}
-		DrawDebugCircleArc(GetWorld(), InternTargetingOriginLocation, MaxTrackDistance, Tower->GetForwardVector(), FMath::DegreesToRadians(FOV/2), 20.0f, DebugColor, false, -1.0f, 2.0f);
-		const FVector StartDirection = FRotator(0.0f, FOV / 2, 0.0f).RotateVector(Tower->GetForwardVector());
-		for(int32 i = 0; i < FOV; i++)
-		{
-			FVector NewDirection = FRotator(0.0f, -i, 0.0f).RotateVector(StartDirection);
-			if(bRestrainFOVToRotationRange || TowerType == ETowerType::OnTargetOnlyRotationRange)
-			{
-				if(FMath::RadiansToDegrees(NewDirection.Rotation().Quaternion().AngularDistance(GetActorForwardVector().Rotation().Quaternion())) > IdleRotationRange / 2)
-				{
-					continue;
-				}
-			}
-			FVector LineEnd = NewDirection * MaxTrackDistance + InternTargetingOriginLocation;
-			DrawDebugLine(GetWorld(), InternTargetingOriginLocation, LineEnd, DebugColor, false, -1.0f, 2.0f);
-		}
-	}
+	DrawTickDebug();
 #endif
+	
 }
 
 bool AEnemyTower::IsAlive() const
@@ -258,7 +214,6 @@ bool AEnemyTower::IsAlive() const
 
 void AEnemyTower::OnDeath() const
 {
-
 	if(IsValid(AnimSkeleton) && IsValid(Tower) && IsValid(Base) && IsValid(CapsuleCollider))
 	{
 		Tower->SetVisibility(false);
@@ -266,7 +221,7 @@ void AEnemyTower::OnDeath() const
 		AnimSkeleton->SetVisibility(true);
 		AnimSkeleton->PlayAnimation(DeathAnimation, false);
 		CapsuleCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		//Todo:Spawn Collectable
+		
 		FVector SpawnLocation = GetActorLocation();
 		SpawnLocation.Z -= CapsuleCollider->GetScaledCapsuleHalfHeight() - 20.0f;
 		GetWorld()->SpawnActor<APickupActor>(APickupActor::StaticClass(), SpawnLocation, GetActorRotation());
@@ -278,17 +233,17 @@ void AEnemyTower::OnTargetLost()
 	TowerTargetingState = ETowerTargetingState::TargetLost;
 	CurrentTurningTime = 0.0f;
 
-	SinStartRotation = Tower->GetComponentRotation();
+	const FRotator StartRotation = Tower->GetComponentRotation();
 	const FQuat ActorQuaternion = GetActorQuat();
 	const float DistanceToUpper = ActorQuaternion.AngularDistance(RotationRangeUpperBound.Quaternion());
 	const float DistanceToLower = ActorQuaternion.AngularDistance(RotationRangeLowerBound.Quaternion());
 	if(DistanceToLower > DistanceToUpper)
 	{
-		SinEndRotation = RotationRangeUpperBound;
+		SetSinStartEndRotation(StartRotation, RotationRangeUpperBound);
 	}
 	else
 	{
-		SinEndRotation = RotationRangeLowerBound;
+		SetSinStartEndRotation(StartRotation, RotationRangeLowerBound);
 	}
 }
 
@@ -297,8 +252,10 @@ void AEnemyTower::OnSinRotationFinished()
 {	
 	if(IsValid(Tower))
 	{
-		SinStartRotation = Tower->GetComponentRotation();
-		SinEndRotation = SinStartRotation.Equals(RotationRangeUpperBound) ? RotationRangeLowerBound : RotationRangeUpperBound;
+		const FRotator StartRotation = Tower->GetComponentRotation();
+		const FRotator EndRotation = StartRotation.Equals(RotationRangeUpperBound) ? RotationRangeLowerBound : RotationRangeUpperBound;
+		
+		SetSinStartEndRotation(StartRotation, EndRotation);
 		
 		if(TowerTargetingState == ETowerTargetingState::TargetLost)
 		{
@@ -314,15 +271,14 @@ void AEnemyTower::OnPlayerFound(const TWeakObjectPtr<APawn> InPlayerPawn)
 	TowerTargetingState = ETowerTargetingState::Targeting;
 }
 
-void AEnemyTower::LookForPlayer(const FVector& StartLocation)
+void AEnemyTower::LookForPlayer()
 {
 	const TWeakObjectPtr<UWorld> World = GetWorld();
 	check(World.Get())
 
 	TArray<FHitResult> Results;
-	const FVector EndLocation = StartLocation;
 	
-	const FCollisionShape CollisionShape = FCollisionShape::MakeSphere(MaxTrackDistance);
+	const FCollisionShape CollisionShape = FCollisionShape::MakeSphere(GetMaxRange());
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.bTraceComplex = false;
@@ -331,103 +287,175 @@ void AEnemyTower::LookForPlayer(const FVector& StartLocation)
 	QueryParams.bIgnoreBlocks = bIgnoreBlocksWhenLookForPlayer;
 	QueryParams.AddIgnoredActor(this);
 	
-	World->SweepMultiByProfile(Results, StartLocation, EndLocation, FQuat::Identity, LookForPlayerCollisionProfileName.Name, CollisionShape, QueryParams);
+	World->SweepMultiByProfile(Results, InternOriginLocation, InternOriginLocation, FQuat::Identity, LookForPlayerCollisionProfileName.Name, CollisionShape, QueryParams);
 
 	for (const FHitResult& Result : Results)
 	{
-		TWeakObjectPtr<AActor> HitActor = Result.GetActor();
-		if(HitActor.IsValid() && HitActor->IsA(APawn::StaticClass()))
+		const TWeakObjectPtr<APawn> HitPawn = Cast<APawn>(Result.GetActor());
+		if(IsTargetAlive(HitPawn) && IsLocationInFieldOfView(HitPawn->GetActorLocation()) && CanTargetLocation(HitPawn->GetActorLocation(), HitPawn))
 		{
-			TWeakObjectPtr<APawn> HitPawn = Cast<APawn>(HitActor);
-			if(HitPawn.IsValid() && HitPawn->IsPlayerControlled())
-			{
-				TWeakObjectPtr<UHealthComponent> PawnHealthComponent = HitPawn->FindComponentByClass<UHealthComponent>();
-				if(PawnHealthComponent.IsValid() && PawnHealthComponent->IsAlive())
-				{
-					FVector AdjustedPawnLocation = HitPawn->GetActorLocation();
-					AdjustedPawnLocation.Z = InternTargetingOriginLocation.Z;
-					if(IsLocationInFieldOfView(StartLocation, AdjustedPawnLocation))
-					{
-						FHitResult InResult;
-						TryTargetLocation(StartLocation, AdjustedPawnLocation, InResult);
-						if(!InResult.bBlockingHit || InResult.GetActor() == HitPawn)
-						{
-							OnPlayerFoundDelegateHandle.Execute(HitPawn);
-							return;
-						}
-					}
-				}
-			}
+			OnPlayerFoundDelegateHandle.Execute(HitPawn);
+			return;
 		}
 	}
 	TargetPawn = nullptr;
 }
 
-bool AEnemyTower::IsLocationInFieldOfView(const FVector& StartLocation, const FVector& TargetLocation) const
+bool AEnemyTower::ShouldRestrainFOVToRotationRange() const
 {
-	const FVector NormalizedTargetDirection = (TargetLocation - StartLocation).GetSafeNormal();
-	
-	float DegreeDistance = FMath::RadiansToDegrees(acos(Tower->GetForwardVector().Dot(NormalizedTargetDirection)));
-	bool bIsInFOV = DegreeDistance < FOV/2;
+	return (bRestrainFOVToRotationRange || TowerType == ETowerType::OnTargetOnlyRotationRange);
+}
 
-	if(bIsInFOV && bRestrainFOVToRotationRange)
+bool AEnemyTower::IsLocationInFieldOfView(const FVector& TargetLocation) const
+{
+	const FVector NormalizedTargetDirection = (TargetLocation - InternOriginLocation).GetSafeNormal2D();
+	bool bIsInFOV = IsDirectionInFOV(NormalizedTargetDirection);
+	
+	if(bIsInFOV && ShouldRestrainFOVToRotationRange())
 	{
-		DegreeDistance = FMath::RadiansToDegrees(acos(GetActorForwardVector().Dot(NormalizedTargetDirection)));
-		bIsInFOV = DegreeDistance < IdleRotationRange/2;
+		bIsInFOV = IsDirectionInRotationRange(NormalizedTargetDirection);
 	}
 	return bIsInFOV;
 }
 
-void AEnemyTower::TryTargetLocation(const FVector& StartLocation, const FVector& TargetLocation, FHitResult& OutHitResult) const
+bool AEnemyTower::CanTargetLocation(FVector TargetLocation, TWeakObjectPtr<APawn> PawnToIgnore) const
 {
+	TargetLocation.Z = InternOriginLocation.Z;
+	FHitResult Result;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
-	GetWorld()->LineTraceSingleByChannel(OutHitResult, StartLocation, TargetLocation, ECC_GameTraceChannel2, QueryParams);
+	GetWorld()->LineTraceSingleByChannel(Result, InternOriginLocation, TargetLocation, ECC_GameTraceChannel2, QueryParams);
+	
+	return (!Result.bBlockingHit || Result.GetActor() == PawnToIgnore);
+	
 }
 
-bool AEnemyTower::IsStillTargeting() const //rename
+bool AEnemyTower::VerifyTargetValid() const
 {
-	if(TargetPawn.IsValid())
+	if(IsTargetAlive() && IsLocationInRange(TargetPawn->GetActorLocation()) && CanTargetLocation(TargetPawn->GetActorLocation(), TargetPawn))
 	{
-		const TWeakObjectPtr<UHealthComponent> PawnHealthComponent = TargetPawn->FindComponentByClass<UHealthComponent>(); //Delegate
-		if(PawnHealthComponent.IsValid() && PawnHealthComponent->IsAlive())
+		if(ShouldVerifyFieldOfView() && !IsLocationInFieldOfView(TargetPawn->GetActorLocation()))
 		{
-			FVector AdjustedPawnLocation = TargetPawn->GetActorLocation();
-			AdjustedPawnLocation.Z = InternTargetingOriginLocation.Z;
-		
-			if(GetDistanceToSelf2D(AdjustedPawnLocation) > MaxTrackDistance)
-			{
-				return false;
-			}
-			FHitResult Result;
-			TryTargetLocation(InternTargetingOriginLocation, AdjustedPawnLocation, Result);
-			if(Result.bBlockingHit && Result.GetActor() != TargetPawn)
-			{
-				return false;
-			}
-			if((TowerType == ETowerType::OnTargetOnlyRotationRange || TowerType == ETowerType::OnTargetOnlyFOV || bLoseTargetWhenOutOfFOV) && !IsLocationInFieldOfView(InternTargetingOriginLocation,AdjustedPawnLocation))
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		return true;
 	}
-	return false;
+	else
+	{
+		return false;
+	}
 }
+
+bool AEnemyTower::IsTargetAlive() const
+{
+	return IsTargetAlive(TargetPawn);
+}
+
+bool AEnemyTower::IsTargetAlive(TWeakObjectPtr<APawn> InTargetPawn)
+{
+	if(!InTargetPawn.IsValid())
+	{
+		return false;
+	}
+	const TWeakObjectPtr<UHealthComponent> PawnHealthComponent = InTargetPawn->FindComponentByClass<UHealthComponent>(); //Delegate
+	return !PawnHealthComponent.IsValid() || PawnHealthComponent->IsAlive();
+	
+}
+
+float AEnemyTower::GetMaxRange() const
+{
+	return MaxRange;
+}
+
+bool AEnemyTower::IsLocationInRange(const FVector& Location) const
+{
+	return GetDistanceToSelf2D(Location) < GetMaxRange();
+}
+
+bool AEnemyTower::ShouldVerifyFieldOfView() const
+{
+	return TowerType == ETowerType::OnTargetOnlyRotationRange || TowerType == ETowerType::OnTargetOnlyFOV || bLoseTargetWhenOutOfFOV;
+}
+
+void AEnemyTower::SetSinStartEndRotation(const FRotator& InStartRotation, const FRotator& InEndRotation)
+{
+	SinStartRotation = InStartRotation;
+	SinEndRotation = InEndRotation;
+	SinDeltaDegree = FMath::RadiansToDegrees(InStartRotation.Quaternion().AngularDistance(InEndRotation.Quaternion()));
+	
+}
+
+float AEnemyTower::GetIdleRotationRange() const
+{
+	return IdleRotationRange;
+}
+
+bool AEnemyTower::IsDirectionInRotationRange(const FVector& Direction) const
+{	
+	const float DegreeDistance = FMath::RadiansToDegrees(acos(GetActorForwardVector().Dot(Direction)));
+	return DegreeDistance < GetIdleRotationRange()/2;
+	//Alternative
+	// const FQuat TargetQuaternion = Direction.Rotation().Quaternion();
+	// if(FMath::RadiansToDegrees(GetActorQuat().AngularDistance(TargetQuaternion)) > GetIdleRotationRange()/2)
+	// {
+	// 	return false;
+	// }
+}
+
+float AEnemyTower::GetFOV() const
+{
+	return FOV;
+}
+
+bool AEnemyTower::IsDirectionInFOV(const FVector& Direction) const
+{
+	if(!IsValid(Tower))
+	{
+		return false;
+	}
+	const float DegreeDistance = FMath::RadiansToDegrees(acos(Tower->GetForwardVector().Dot(Direction)));
+	return DegreeDistance < GetFOV()/2;
+}
+
+bool AEnemyTower::IsPredictingTower() const
+{
+	return TowerFireType == ETowerFireType::Predicted || TowerType == ETowerType::FullyPredicted || TowerType == ETowerType::LocationPredicted;
+}
+
+bool AEnemyTower::ShouldPredictRotation() const
+{
+	return TowerType == ETowerType::FullyPredicted || bPredictRotatedLocation;
+}
+
+bool AEnemyTower::ShouldVerifyTargetAimLocation() const
+{
+	return bNeedsUnblockedVisionToAimTargetForFiring || TowerType == ETowerType::OnTarget || TowerType == ETowerType::OnTargetOnlyRotationRange || TowerType == ETowerType::OnTargetOnlyFOV;
+}
+
+bool AEnemyTower::ShouldConstrainAimDirectionToRotationRange() const
+{
+	return bCanOnlyTargetLocationsInRotationRange || TowerType == ETowerType::OnTargetOnlyRotationRange;
+}
+
+
 
 bool AEnemyTower::ShouldSkipUpdate()
 {
 	return !IsValid(ProjectileOrigin) || !IsValid(Tower) || !IsValid(GetWorld()) || !IsAlive();
 }
 
-void AEnemyTower::SetDesiredTravelTime(float InDistance)
+float AEnemyTower::GetDesiredProjectileTravelTime(const FVector& Location) const
 {
 	if(DistanceToTravelTimeCurve.GetRichCurveConst() != nullptr)
 	{		
-		InternDesiredProjectileTravelTime = DistanceToTravelTimeCurve.GetRichCurveConst()->Eval(InDistance);
-		return;
+		return DistanceToTravelTimeCurve.GetRichCurveConst()->Eval(GetDistanceToSelf2D(Location));
 	}
-	InternDesiredProjectileTravelTime = 1.0f;
+	else
+	{
+		UE_LOG(LogTemp, Warning , TEXT("%s() Curve not Setup in BP, fallback to 1 second"),*FString(__FUNCTION__));
+		return 1.0f;
+	}
+	
 }
 
 void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float DeltaTime)
@@ -435,9 +463,8 @@ void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float
 	if(IsValid(Tower))
 	{
 		CurrentTurningTime += DeltaTime;
-		
-		const float DeltaDegree = FMath::RadiansToDegrees(SinStartRotation.Quaternion().AngularDistance(SinEndRotation.Quaternion()));
-		const float TurningTime = DeltaDegree / AverageDegreePerSecond;
+
+		const float TurningTime = SinDeltaDegree / AverageDegreePerSecond;
 		const float Alpha = FMath::Clamp<float>(CurrentTurningTime / TurningTime, 0.0f, 1.0f);
 		Tower->SetWorldRotation(FMath::InterpSinInOut(SinStartRotation, SinEndRotation, Alpha));
 	
@@ -449,31 +476,28 @@ void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float
 	}
 }
 
-FVector AEnemyTower::GetFireTargetLocation()
+void AEnemyTower::GetFireTargetLocation(const FVector& InTargetLocation,  FVector& OutFireTargetLocation, float& OutDesiredProjectileSpeed)
 {
 	if(!TargetPawn.IsValid() || !IsValid(Tower))
 	{
-		return FVector::ZeroVector; 
+		return;
 	}
-	FVector OutTargetLocation = FVector::ZeroVector;
+	const float DesiredTravelTime = GetDesiredProjectileTravelTime(InTargetLocation);
 	
-	const FVector PlayerLocation = TargetPawn->GetActorLocation();
-	
-	if(TowerFireType == ETowerFireType::Predicted || TowerType == ETowerType::FullyPredicted || TowerType == ETowerType::LocationPredicted)
+	if(IsPredictingTower())
 	{
 		const TWeakObjectPtr<UTankMovementComponent> TankMovementComponent = Cast<UTankMovementComponent>(TargetPawn->GetMovementComponent());
 		if(TankMovementComponent.IsValid())
 		{
-			const bool bOutPredictRotation = (TowerType == ETowerType::FullyPredicted || bPredictRotatedLocation);
-			OutTargetLocation = TankMovementComponent->PredictLocationAfterSeconds(InternDesiredProjectileTravelTime, bOutPredictRotation);
+			OutFireTargetLocation = TankMovementComponent->PredictLocationAfterSeconds(DesiredTravelTime, ShouldPredictRotation());
 		}
 	}
 	else
 	{
-		OutTargetLocation = PlayerLocation;
+		OutFireTargetLocation = TargetPawn->GetActorLocation();
 	}
-	OutTargetLocation.Z = InternTargetingOriginLocation.Z;
-	return OutTargetLocation;
+	OutFireTargetLocation.Z = InternOriginLocation.Z;
+	OutDesiredProjectileSpeed = GetDistanceToSelf2D(OutFireTargetLocation) / DesiredTravelTime;
 }
 
 bool AEnemyTower::RotateToDesiredRotationAtDegreeRate(const FRotator& DesiredRotation, const float DeltaTime, const float DesiredMaxDegreePerSecond) const
@@ -495,36 +519,69 @@ bool AEnemyTower::RotateToDesiredRotationAtDegreeRate(const FRotator& DesiredRot
 	return false;
 }
 
-
-
 bool AEnemyTower::IsAimTargetLocationValid(const FVector& AimTargetLocation) const
 {
-	if(IsValid(Tower))
+	if(ShouldVerifyTargetAimLocation() && !CanTargetLocation(AimTargetLocation, TargetPawn))
 	{
-		if(bNeedsUnblockedVisionToAimTargetForFiring || TowerType == ETowerType::OnTarget || TowerType == ETowerType::OnTargetOnlyRotationRange || TowerType == ETowerType::OnTargetOnlyFOV)
-		{
-			FHitResult Result;
-			TryTargetLocation(InternTargetingOriginLocation, AimTargetLocation, Result);
-			if(Result.bBlockingHit && Result.GetActor() != TargetPawn)
-			{
-				return false;
-			}
-		}
-		if(bCanOnlyTargetLocationsInRotationRange || TowerType == ETowerType::OnTargetOnlyRotationRange)
-		{
-			const FVector AimTargetDirection = AimTargetLocation - InternTargetingOriginLocation;
-			const FQuat TargetQuaternion = AimTargetDirection.Rotation().Quaternion();
-			if(FMath::RadiansToDegrees(GetActorQuat().AngularDistance(TargetQuaternion)) > IdleRotationRange/2)
-			{
-				return false;
-			}
-		}
-		return true;
+		return false;
 	}
-	return false;
+	if(ShouldConstrainAimDirectionToRotationRange())
+	{
+		const FVector DesiredAimDirection = (AimTargetLocation - InternOriginLocation).GetSafeNormal2D();
+		if(!IsDirectionInRotationRange(DesiredAimDirection))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 float AEnemyTower::GetDistanceToSelf2D(const FVector& InLocation) const
 {
 	return FVector::Dist2D(InLocation, ProjectileOrigin->GetComponentLocation());
 }
+
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+void AEnemyTower::DrawTickDebug() const
+{
+	if(bDebug || CVarShowAllTowerTargeting->GetBool())
+	{
+		DrawDebugCircleArc(GetWorld(), InternOriginLocation, GetMaxRange(), GetActorForwardVector(), FMath::DegreesToRadians(GetIdleRotationRange()/2), 20.0f, FColor::Yellow);
+		DrawDebugLine(GetWorld(), InternOriginLocation, RotationRangeUpperBound.Vector() * GetMaxRange() + InternOriginLocation, FColor::Yellow);
+		DrawDebugLine(GetWorld(), InternOriginLocation, RotationRangeLowerBound.Vector() * GetMaxRange() + InternOriginLocation, FColor::Yellow);
+
+		FColor DebugColor;
+		switch (TowerTargetingState)
+		{
+		case ETowerTargetingState::Idle:
+			DebugColor = FColor::Green;
+			break;
+		case ETowerTargetingState::Targeting:
+			DebugColor = FColor::Red;
+			break;
+		case ETowerTargetingState::TargetOutOfView:
+			DebugColor = FColor::Orange;
+			break;
+		case ETowerTargetingState::TargetLost:
+			DebugColor = FColor::Magenta;
+			break;
+		default: ;
+		}
+		DrawDebugCircleArc(GetWorld(), InternOriginLocation, GetMaxRange(), Tower->GetForwardVector(), FMath::DegreesToRadians(GetFOV()/2), 20.0f, DebugColor, false, -1.0f, 2.0f);
+		const FVector StartDirection = FRotator(0.0f, GetFOV() / 2, 0.0f).RotateVector(Tower->GetForwardVector());
+		for(int32 i = 0; i < GetFOV(); i++)
+		{
+			FVector NewDirection = FRotator(0.0f, -i, 0.0f).RotateVector(StartDirection);
+			if(ShouldRestrainFOVToRotationRange())
+			{
+				if(FMath::RadiansToDegrees(NewDirection.Rotation().Quaternion().AngularDistance(GetActorForwardVector().Rotation().Quaternion())) > GetIdleRotationRange() / 2)
+				{
+					continue;
+				}
+			}
+			FVector LineEnd = NewDirection * GetMaxRange() + InternOriginLocation;
+			DrawDebugLine(GetWorld(), InternOriginLocation, LineEnd, DebugColor, false, -1.0f, 2.0f);
+		}
+	}
+}
+#endif

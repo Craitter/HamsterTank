@@ -92,10 +92,7 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
-	{
-		return;
-	}
+	
 	//see @UFloatingPawnMovement.cpp Tick for use of AI and LocalController
 
 	
@@ -114,91 +111,13 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	else
 	{
 		SetDrivingValuesDependingOnState();
-		Velocity = ComputeVelocity(DeltaTime);
+		ComputeVelocity(DeltaTime, Velocity);
 	}
 	ProcessUserDesiredRotation(DeltaTime);
 	
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
-	FVector StartLocation;
-	FVector EndLocation;
-	
-	if(CVarShowVelocityDirection->GetBool())
-	{
-		float ZOffset = 100.0f;
-		if(Velocity.IsNearlyZero())
-		{
-			StartLocation = GetActorLocation();
-			StartLocation.Z += ZOffset;
-			DrawDebugPoint(GetWorld(), StartLocation, 10.0f, FColor::Blue, false, -1, 5.0f);
-		
-		}
-		else
-		{
-			StartLocation = GetActorLocation() - Velocity.GetSafeNormal() * 20;
-			StartLocation.Z += ZOffset;
-			EndLocation = GetActorLocation() + Velocity.GetSafeNormal() * 20;
-			EndLocation.Z += ZOffset;
-			DrawDebugDirectionalArrow(GetWorld(), StartLocation, EndLocation, 30.0f, FColor::Blue, false, -1, 5.0f, 10.0f);
-		}
-
-	}
-	if(CVarShowInputDirection->GetBool())
-	{
-		FColor PressedColor = FColor::White;
-		FColor ReleasedColor = FColor(FLinearColor::Gray.ToFColor(true));
-		FColor RightArrowColor = ReleasedColor;
-		FColor ForwardArrowColor = ReleasedColor;
-		FColor LeftArrowColor = ReleasedColor;
-		FColor BackwardArrowColor = ReleasedColor;
-		if(!GetPendingInputVector().IsNearlyZero())
-		{
-			if(GetPendingInputVector().X < -UE_FLOAT_NORMAL_THRESH)
-			{
-				BackwardArrowColor = PressedColor;
-			}
-			else if(GetPendingInputVector().X > UE_FLOAT_NORMAL_THRESH)
-			{
-				ForwardArrowColor = PressedColor;
-			}
-
-			if(GetPendingInputVector().Y < -UE_FLOAT_NORMAL_THRESH)
-			{
-				LeftArrowColor = PressedColor;
-			}
-			else if(GetPendingInputVector().Y > UE_FLOAT_NORMAL_THRESH)
-			{
-				RightArrowColor = PressedColor;
-			}
-
-			
-		}
-		StartLocation = GetActorLocation();
-		EndLocation = StartLocation;
-		float Offset = 100.0f;
-		float Length = 50.0f;
-		float ArrowSize = 30.0f;
-		DrawDebugDirectionalArrow(GetWorld(), StartLocation + PawnOwner->GetActorForwardVector() * Offset, StartLocation + PawnOwner->GetActorForwardVector() * (Offset + Length), ArrowSize, ForwardArrowColor, false, -1, 4.0f, 10.0f);
-		DrawDebugDirectionalArrow(GetWorld(), StartLocation - PawnOwner->GetActorForwardVector() * Offset, StartLocation - PawnOwner->GetActorForwardVector() * (Offset + Length), ArrowSize, BackwardArrowColor, false, -1, 4.0f, 10.0f);
-		DrawDebugDirectionalArrow(GetWorld(), StartLocation + PawnOwner->GetActorRightVector() * Offset, StartLocation + PawnOwner->GetActorRightVector() * (Offset + Length), ArrowSize, RightArrowColor, false, -1, 4.0f, 10.0f);
-		DrawDebugDirectionalArrow(GetWorld(), StartLocation - PawnOwner->GetActorRightVector() * Offset, StartLocation - PawnOwner->GetActorRightVector() * (Offset + Length), ArrowSize, LeftArrowColor, false, -1, 4.0f, 10.0f);
-	}
-	if(CVarShowCollider->GetBool())
-	{
-		TWeakObjectPtr<USphereComponent> Shape = Cast<USphereComponent>(UpdatedComponent);
-		if(Shape.IsValid())
-		{
-			DrawDebugSphere(GetWorld(), GetActorLocation(), Shape->GetScaledSphereRadius(), 10.0f, FColor::Green, false, -1, 1);
-		}
-		
-	}
-	//VelocityDirection
-	//MaxSpeed
-	//CurrentSpeed
-	//DrivingState
-	//Sliding
-	//Resistance
+	DrawTickDebug();
 #endif
-
 	
 	ConsumeInputVector();
 	
@@ -265,10 +184,15 @@ void UTankMovementComponent::UpdateComponentVelocity()
 	}
 }
 
-FVector UTankMovementComponent::PredictLocationAfterSeconds(const float Seconds,
-                                                         bool bPredictRotation) const
+bool UTankMovementComponent::ShouldSkipUpdate(float DeltaTime) const
 {
-	if(!IsValid(UpdatedComponent))
+	return Super::ShouldSkipUpdate(DeltaTime) || !IsValid(PawnOwner) || !IsValid(UpdatedComponent);
+}
+
+FVector UTankMovementComponent::PredictLocationAfterSeconds(const float Seconds,
+                                                            bool bPredictRotation) const
+{
+	if(!IsValid(UpdatedComponent) || !IsValid(PawnOwner))
 	{
 		UE_LOG(LogTemp, Warning , TEXT("Updated Component is Zero"));
 		return FVector::ZeroVector;
@@ -282,33 +206,26 @@ FVector UTankMovementComponent::PredictLocationAfterSeconds(const float Seconds,
 	FVector DeltaLocation = FVector::ZeroVector;
 	do
 	{
-		FVector Force = ForwardTemp * CurrentDrivingForce * GetPendingInputVector().X;
+		FVector Force = ForwardTemp * CurrentDrivingForce * GetLastInputVector().X;
 		
-		const float AccelerationDueToGravity = GetWorld()->GetGravityZ() / -100.0f; //Convert to cm
-		const float NormalForce = AccelerationDueToGravity * Mass;
-		Force += -TempVelocity.GetSafeNormal() * NormalForce *  RollingResistanceCoefficient;
-
 		
-		Step++;
-		//Applying Resistant Forces to the Engine Force
-		const float InDragCoefficient = CurrentDrivingForce / (CurrentMaxSpeed * CurrentMaxSpeed);
-		Force += -TempVelocity.GetSafeNormal() * TempVelocity.SizeSquared() * InDragCoefficient;
-	
+		Force += GetAirResistance(TempVelocity);
+		Force += GetRollingResistance(TempVelocity);
 		//Create the Velocity / Update Velocity
 		const FVector Acceleration = Force / Mass;
-		
 		TempVelocity += Acceleration * TimeSizePerStep; // makes m/s from the acceleration which is m/s^2
 		
 		if(DrivingState != EDrivingState::DS_Idle && bPredictRotation)
 		{
 			const float DeltaTurn = FVector::DotProduct(ForwardTemp, TempVelocity) * TimeSizePerStep;
-			const float RotationAngle = DeltaTurn / MinTurningRadius * GetPendingInputVector().Y;
+			const float RotationAngle = DeltaTurn / GetMinTurningRadius(TempVelocity.Size()) * GetLastInputVector().Y;
 			FQuat RotationDelta = FQuat(PawnOwner->GetActorUpVector(), RotationAngle);
 			TempVelocity = RotationDelta.RotateVector(TempVelocity);
 			ForwardTemp = RotationDelta.RotateVector(ForwardTemp);
 		}
 		
 		DeltaLocation += TempVelocity * 100.0f * TimeSizePerStep;
+		Step++;
 	}
 	while (Step <= Steps);
 		
@@ -393,7 +310,7 @@ float UTankMovementComponent::GetSlideVelocityRatio() const
 }
 
 bool UTankMovementComponent::IsStillSliding()
-{
+{ //Todo make single functions for each check
 	//Maybe some of this can be removed because when there is no blocking hit we stop sliding as well...
 	if(DrivingState == EDrivingState::DS_Idle || BlockedDirection.IsNearlyZero())
 	{
@@ -446,31 +363,44 @@ void UTankMovementComponent::SetDrivingValuesDependingOnState()
 	}
 }
 
-FVector UTankMovementComponent::ComputeVelocity(const float InDeltaTime) const
+void UTankMovementComponent::ComputeVelocity(const float InDeltaTime, FVector& InVelocity) const
 {
 	FVector Force = PawnOwner->GetActorForwardVector() * CurrentDrivingForce * GetPendingInputVector().X;
 
 	//Applying Resistant Forces to the Engine Force
-	Force += GetAirResistance(); 
-	Force += GetRollingResistance(); 
+	Force += GetAirResistance(InVelocity); 
+	Force += GetRollingResistance(InVelocity); 
 
 	//Create the Velocity / Update Velocity
 	const FVector Acceleration = Force / Mass;
-	return Velocity + Acceleration * InDeltaTime; // makes m/s from the acceleration which is m/s^2
+	InVelocity += Acceleration * InDeltaTime; // makes m/s from the acceleration which is m/s^2
 }
 
 
-FVector UTankMovementComponent::GetAirResistance() const
+FVector UTankMovementComponent::GetAirResistance(const FVector& InVelocity) const
 {
 	const float InDragCoefficient = CurrentDrivingForce / (CurrentMaxSpeed * CurrentMaxSpeed);
-	return -Velocity.GetSafeNormal() * Velocity.SizeSquared() * InDragCoefficient;
+	return -InVelocity.GetSafeNormal() * InVelocity.SizeSquared() * InDragCoefficient;
 }
 
-FVector UTankMovementComponent::GetRollingResistance() const
+FVector UTankMovementComponent::GetRollingResistance(const FVector& InVelocity) const
 {
 	const float AccelerationDueToGravity = GetWorld()->GetGravityZ() / -100.0f; //Convert to cm
 	const float NormalForce = AccelerationDueToGravity * Mass;
-	return -Velocity.GetSafeNormal() * NormalForce *  RollingResistanceCoefficient;
+	return -InVelocity.GetSafeNormal() * NormalForce *  RollingResistanceCoefficient;
+}
+
+float UTankMovementComponent::GetMinTurningRadius(float Speed) const
+{
+	if(SpeedTurningCurve.GetRichCurveConst() != nullptr)
+	{
+		return SpeedTurningCurve.GetRichCurveConst()->Eval(Speed);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error , TEXT("%s() SpeedTurningCurve is NULL, fill out BP first"), *FString(__FUNCTION__));
+		return -1.0f;
+	}
 }
 
 void UTankMovementComponent::ProcessUserDesiredRotation(float InDeltaTime)
@@ -483,6 +413,7 @@ void UTankMovementComponent::ProcessUserDesiredRotation(float InDeltaTime)
 	}
 	else
 	{
+		const float MinTurningRadius = GetMinTurningRadius(Velocity.Size());
 		const float DeltaLocation = FVector::DotProduct(PawnOwner->GetActorForwardVector(), Velocity) * InDeltaTime;
 		const float RotationAngle = DeltaLocation / MinTurningRadius * GetPendingInputVector().Y;
 		RotationDelta = FQuat(PawnOwner->GetActorUpVector(), RotationAngle);
@@ -549,6 +480,81 @@ void UTankMovementComponent::OnToggleAllDebug(IConsoleVariable* ConsoleVariable)
 	CVarShowInputDirection->Set(NewFlag);
 	CVarShowTurningCircle->Set(NewFlag);
 	CVarShowVelocityDirection->Set(NewFlag);
+}
+
+void UTankMovementComponent::DrawTickDebug() const
+{
+	FVector StartLocation;
+	FVector EndLocation;
+	
+	if(CVarShowVelocityDirection->GetBool())
+	{
+		constexpr float ZOffset = 100.0f;
+		if(Velocity.IsNearlyZero())
+		{
+			StartLocation = GetActorLocation();
+			StartLocation.Z += ZOffset;
+			DrawDebugPoint(GetWorld(), StartLocation, 10.0f, FColor::Blue, false, -1, 5.0f);
+		
+		}
+		else
+		{
+			StartLocation = GetActorLocation() - Velocity.GetSafeNormal() * 20;
+			StartLocation.Z += ZOffset;
+			EndLocation = GetActorLocation() + Velocity.GetSafeNormal() * 20;
+			EndLocation.Z += ZOffset;
+			DrawDebugDirectionalArrow(GetWorld(), StartLocation, EndLocation, 30.0f, FColor::Blue, false, -1, 5.0f, 10.0f);
+		}
+
+	}
+	if(CVarShowInputDirection->GetBool())
+	{
+		const FColor PressedColor = FColor::White;
+		const FColor ReleasedColor = FColor(FLinearColor::Gray.ToFColor(true));
+		FColor RightArrowColor = ReleasedColor;
+		FColor ForwardArrowColor = ReleasedColor;
+		FColor LeftArrowColor = ReleasedColor;
+		FColor BackwardArrowColor = ReleasedColor;
+		if(!GetPendingInputVector().IsNearlyZero())
+		{
+			if(GetPendingInputVector().X < -UE_FLOAT_NORMAL_THRESH)
+			{
+				BackwardArrowColor = PressedColor;
+			}
+			else if(GetPendingInputVector().X > UE_FLOAT_NORMAL_THRESH)
+			{
+				ForwardArrowColor = PressedColor;
+			}
+
+			if(GetPendingInputVector().Y < -UE_FLOAT_NORMAL_THRESH)
+			{
+				LeftArrowColor = PressedColor;
+			}
+			else if(GetPendingInputVector().Y > UE_FLOAT_NORMAL_THRESH)
+			{
+				RightArrowColor = PressedColor;
+			}
+
+			
+		}
+		StartLocation = GetActorLocation();
+		EndLocation = StartLocation;
+		constexpr float Offset = 100.0f;
+		constexpr float Length = 50.0f;
+		constexpr float ArrowSize = 30.0f;
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation + PawnOwner->GetActorForwardVector() * Offset, StartLocation + PawnOwner->GetActorForwardVector() * (Offset + Length), ArrowSize, ForwardArrowColor, false, -1, 4.0f, 10.0f);
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation - PawnOwner->GetActorForwardVector() * Offset, StartLocation - PawnOwner->GetActorForwardVector() * (Offset + Length), ArrowSize, BackwardArrowColor, false, -1, 4.0f, 10.0f);
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation + PawnOwner->GetActorRightVector() * Offset, StartLocation + PawnOwner->GetActorRightVector() * (Offset + Length), ArrowSize, RightArrowColor, false, -1, 4.0f, 10.0f);
+		DrawDebugDirectionalArrow(GetWorld(), StartLocation - PawnOwner->GetActorRightVector() * Offset, StartLocation - PawnOwner->GetActorRightVector() * (Offset + Length), ArrowSize, LeftArrowColor, false, -1, 4.0f, 10.0f);
+	}
+	if(CVarShowCollider->GetBool())
+	{
+		const TWeakObjectPtr<USphereComponent> Shape = Cast<USphereComponent>(UpdatedComponent);
+		if(Shape.IsValid())
+		{
+			DrawDebugSphere(GetWorld(), GetActorLocation(), Shape->GetScaledSphereRadius(), 10.0f, FColor::Green, false, -1, 1);
+		}
+	}
 }
 
 #endif

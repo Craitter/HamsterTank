@@ -151,7 +151,7 @@ protected:
 	bool bIgnoreBlocksWhenLookForPlayer;
 	//The Radius we look for targets and the max distance we track targets
 	UPROPERTY(EditAnywhere, Category = "Tower|Targeting", meta = (ClampMin = "0", ClampMax = "10000", Units = "cm"))
-	float MaxTrackDistance = 3000.0f;
+	float MaxRange = 3000.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "Tower|Targeting")
 	ETowerType TowerType = ETowerType::OnTarget;
@@ -213,7 +213,7 @@ protected:
 	 * @brief Depending On the FireType it will choose to calculate a fitting TargetLocation
 	 * @return The TargetLocation
 	 */
-	virtual FVector GetFireTargetLocation();
+	virtual void GetFireTargetLocation(const FVector& InTargetLocation, FVector& OutFireTargetLocation, float& OutDesiredProjectileSpeed);
 
 
 	/**
@@ -224,9 +224,8 @@ protected:
 	float GetDistanceToSelf2D(const FVector& InLocation) const;
 	/**
 	 * @brief Tries Accessing the FRuntimeFloatCurve to get the Desired TravelTime Depending on Distance, sets InternDesiredProjectileTravelTime
-	 * @param InDistance The Depending Distance
 	 */
-	void SetDesiredTravelTime(float InDistance);
+	float GetDesiredProjectileTravelTime(const FVector& Location) const;
 
 	/**
 	 * @brief Helper Function to Slerp the tower to a desired Rotation at a fixed DegreePerSecond (Always Shortest Path) Can Easily cope with Desired Rotation Changes while updating
@@ -243,29 +242,55 @@ private:
 	 * @brief Checks if there is a Player in Field of View and if it is Visible by our Turret, eventually calls IsLocationInFieldOfView and TryTargetLocation
 	 * If it find a Player it will execute OnPlayerFoundDelegateHandle which Calls OnPlayerFound by default (Makes one Sphere with R = MaxTrackDistance and iterates every overlap... See LookForPlayerProfile)
 	 * Todo: Expand to be more functional and generalized
-	 * @param StartLocation The Location from where we StartLooking for the Player (Usually this should be OurLocation but maybe we want it to work different at some point)
 	 */
-	void LookForPlayer(const FVector& StartLocation);
+	void LookForPlayer();
+	bool ShouldRestrainFOVToRotationRange() const;
 	/**
 	 * @brief Calculates Degree Distance of FWD Vector and then checks if bigger than FOV/2 
-	 * @param StartLocation Location where to StartTracking
 	 * @param TargetLocation Location To Check if in FOV
 	 * @return weather it is in FOV or not
 	 */
-	bool IsLocationInFieldOfView(const FVector& StartLocation, const FVector& TargetLocation) const;
+	bool IsLocationInFieldOfView(const FVector& TargetLocation) const;
 	/**
 	 * @brief Simple Line Trace with custom channel
-	 * @param StartLocation Origin
 	 * @param TargetLocation Point To Try To Target
-	 * @param OutHitResult The Result
 	 */
-	void TryTargetLocation(const FVector& StartLocation, const FVector& TargetLocation, FHitResult& OutHitResult) const;
+	bool CanTargetLocation(FVector TargetLocation, TWeakObjectPtr<APawn> PawnToIgnore) const;
 
 	/**
 	 * @brief checks against predefined parameters, like out of distance, see bLoseTargetWhenOutOfFOV and bNeedsUnblockedPlayerVisionStayInTargetingState for more
 	 * @return if we should abort targeting
 	 */
-	bool IsStillTargeting() const;
+	bool VerifyTargetValid() const;
+
+	bool IsTargetAlive() const;
+	
+	static bool IsTargetAlive(TWeakObjectPtr<APawn> InTargetPawn);
+	float GetMaxRange() const;
+
+	bool IsLocationInRange(const FVector& Location) const;
+
+	bool ShouldVerifyFieldOfView() const;
+	
+	void SetSinStartEndRotation(const FRotator& InStartRotation, const FRotator& InEndRotation);
+	float GetIdleRotationRange() const;
+
+	bool IsDirectionInRotationRange(const FVector& Direction) const;
+	float GetFOV() const;
+
+	bool IsDirectionInFOV(const FVector& Direction) const;
+
+	bool IsPredictingTower() const;
+
+	bool ShouldPredictRotation() const;
+
+	bool ShouldVerifyTargetAimLocation() const;
+
+	bool ShouldConstrainAimDirectionToRotationRange() const;
+
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+	void DrawTickDebug() const;
+#endif
 	
 	/**
 	 * @brief checks against predefined parameters, like bNeedsUnblockedVisionToAimTargetForFiring and bCanOnlyTargetLocationsInRotationRange
@@ -298,10 +323,11 @@ private:
 	float CurrentTurningTime;
 	FRotator SinStartRotation;
 	FRotator SinEndRotation;
+	float SinDeltaDegree = 0.0f;
 
-	float InternDesiredProjectileTravelTime = 0.0f;
+
 	//This property has the Z Location from the ProjectileOriginComponent and the X and Y from the Tower Location,
 	//so we trace at the right height, this is espacially useful when the rotation tower has its root at 0 instead of the center of the rotating tower
-	FVector InternTargetingOriginLocation = FVector::ZeroVector;
+	FVector InternOriginLocation = FVector::ZeroVector;
 	//Temp Intern Values
 };
