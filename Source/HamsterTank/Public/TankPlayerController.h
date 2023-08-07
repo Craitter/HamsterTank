@@ -7,6 +7,11 @@
 #include "InputMappingContext.h"
 #include "TankPlayerController.generated.h"
 
+struct FObjectiveScore;
+class UTankBaseWidget;
+class UUISubsystem;
+class UGameOverlayWidget;
+class UObjectiveSubsystem;
 class USphereComponent;
 class UCameraComponent;
 class USpringArmComponent;
@@ -28,6 +33,9 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	void OnObjectiveTowerDestroyed();
+
+	void OnGameIsEnding(FObjectiveScore& Score);
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
@@ -36,6 +44,8 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	virtual void SetupInputComponent() override;
+
+	
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_Drive = {nullptr};
@@ -53,10 +63,13 @@ protected:
 	TObjectPtr<UInputAction> IA_EnableCameraRotation = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Pause = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> IMC_MK_Default = {nullptr};
 	
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UUserWidget> GameOverlay = {nullptr};
+	TSubclassOf<UTankBaseWidget> GameOverlayClass = {nullptr};
 private:
 	void RequestDriveCallback(const FInputActionValue& Value);
 
@@ -64,15 +77,23 @@ private:
 
 	void RequestAimCallback(const FInputActionValue& Value);
 
-	void OnPlayerDied();
+	void RequestPauseCallback();
+	void RequestUnPauseCallback();
+	
+	void OnPlayerDied(TWeakObjectPtr<AController> DamageInstigator);
+	
 
+	TWeakObjectPtr<UGameOverlayWidget> GameOverlayWidget = {nullptr};
 	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
 	TWeakObjectPtr<ATankBase> TankPawn = {nullptr};
-
+	TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem ={nullptr};
+	TWeakObjectPtr<UUISubsystem> UISubsystem = {nullptr};
+	
 	uint32 DriveDelegateHandle = 0;
 	uint32 DriveStopDelegateHandle = 0;
 	uint32 FireDelegateHandle = 0;
-	uint32 AimDelegateHandle = 0;	
+	uint32 AimDelegateHandle = 0;
+	uint32 PauseDelegateHandle = 0;
 };
 
 

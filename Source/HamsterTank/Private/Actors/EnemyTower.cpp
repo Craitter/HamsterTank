@@ -5,6 +5,7 @@
 #include "Actors/EnemyTower.h"
 
 
+#include "ObjectiveSubsystem.h"
 #include "Actors/PickupActor.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/FireProjectileComponent.h"
@@ -86,6 +87,12 @@ void AEnemyTower::BeginPlay()
 {
 	Super::BeginPlay();
 
+	const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
+	if(GameInstance.IsValid())
+	{
+		ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
+	}
+	
 	if(TowerType != ETowerType::Custom)
 	{
 		bLoseTargetWhenOutOfFOV = false;
@@ -212,8 +219,12 @@ bool AEnemyTower::IsAlive() const
 	return false;
 }
 
-void AEnemyTower::OnDeath() const
+void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator) const
 {
+	if(ObjectiveSubsystem.IsValid())
+	{
+		ObjectiveSubsystem->TowerDestroyed(DamageInstigator.Get());
+	}
 	if(IsValid(AnimSkeleton) && IsValid(Tower) && IsValid(Base) && IsValid(CapsuleCollider))
 	{
 		Tower->SetVisibility(false);
@@ -436,8 +447,6 @@ bool AEnemyTower::ShouldConstrainAimDirectionToRotationRange() const
 {
 	return bCanOnlyTargetLocationsInRotationRange || TowerType == ETowerType::OnTargetOnlyRotationRange;
 }
-
-
 
 bool AEnemyTower::ShouldSkipUpdate()
 {

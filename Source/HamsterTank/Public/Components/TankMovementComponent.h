@@ -48,6 +48,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	//If you move forward and want to transition to the sliding state this should be called... it does not call SlideAlongSurface!!! it just enables velocity adjustment depending on the angle to the Surface
 	void StartSliding(const FVector& ImpactNormal);
 	

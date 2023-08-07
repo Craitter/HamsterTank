@@ -25,7 +25,7 @@ APickupActor::APickupActor()
 
 	SetRootComponent(CapsuleCollider);
 	CapsuleCollider->SetCapsuleHalfHeight(80.0f);
-	CapsuleCollider->SetCapsuleRadius(50.0f);
+	CapsuleCollider->SetCapsuleRadius(60.0f);
 	CapsuleCollider->SetCollisionProfileName(FName("OverlapOnlyPawn"));
 	PickupParticle->SetupAttachment(CapsuleCollider);
 	

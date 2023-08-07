@@ -39,6 +39,9 @@ void UHandleDamageComponent::OnOwnerTakePointDamage(AActor* DamagedActor, float 
 	{
 		return;
 	}
+	
+
+	
 	const FVector ForwardVector = Owner->GetActorForwardVector();
 	const float DeltaFwd = ForwardVector.Dot(ShotFromDirection);
 	const float Degree = FMath::RadiansToDegrees(acos(abs(DeltaFwd)));
@@ -84,7 +87,7 @@ void UHandleDamageComponent::OnOwnerTakePointDamage(AActor* DamagedActor, float 
 			}
 		}
 	}
-	AssociatedHealthComponent->ReceiveFinalDamage(Damage);
+	AssociatedHealthComponent->ReceiveFinalDamage(Damage, InstigatedBy);
 }
 
 FVector UHandleDamageComponent::GetLastHitDirection()

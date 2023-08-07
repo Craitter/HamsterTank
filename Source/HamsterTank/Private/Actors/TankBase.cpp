@@ -5,7 +5,9 @@
 
 #include "Actors/TankBase.h"
 
+#include "ObjectiveSubsystem.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CherryObjectiveComponent.h"
 #include "Components/FireProjectileComponent.h"
 #include "Components/HandleDamageComponent.h"
 #include "Components/HealthComponent.h"
@@ -41,6 +43,8 @@ ATankBase::ATankBase()
 	if(!ensure(IsValid(HealthComponent))) return;
 	HandleDamageComponent = CreateDefaultSubobject<UHandleDamageComponent>("HandleDamageComponent");
 	if(!ensure(IsValid(HandleDamageComponent))) return;
+	CherryObjectiveComponent = CreateDefaultSubobject<UCherryObjectiveComponent>("CherryObjectiveComponent");
+	if(!ensure(IsValid(CherryObjectiveComponent))) return;
 	CollectPickupComponent = CreateDefaultSubobject<UCollectPickupComponent>("CollectPickupComponent");
 	if(!ensure(IsValid(CollectPickupComponent))) return;
 	
@@ -137,7 +141,7 @@ void ATankBase::RequestFire()
 	}
 }
 
-void ATankBase::OnActorDied()
+void ATankBase::OnActorDied(TWeakObjectPtr<AController> DamageInstigator)
 {
 	//Todo:
 	//Play Animation
@@ -297,6 +301,17 @@ FVector ATankBase::GetLastHitDirection() const
 		return HandleDamageComponent->GetLastHitDirection();
 	}
 	return FVector::ZeroVector;
+}
+
+void ATankBase::GetScore(FObjectiveScore& Score) const
+{
+	if(!IsValid(HealthComponent) || !IsValid(FireProjectileComponent) || !IsValid(CherryObjectiveComponent))
+	{
+		return;
+	}
+	Score.SetHealth(HealthComponent->GetCurrentHealth());
+	Score.SetCherries(CherryObjectiveComponent->GetCurrentCherries());
+	Score.SetAmmo(FireProjectileComponent->GetCurrentAmmo());
 }
 
 // FVector ATankBase::GetDesiredTargetRotation() const

@@ -6,6 +6,8 @@
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
+struct FObjectiveScore;
+class UCherryObjectiveComponent;
 class UCollectPickupComponent;
 struct FPickupData;
 class UHandleDamageComponent;
@@ -20,6 +22,7 @@ class UTankMovementComponent;
 class UBoxComponent;
 class UCameraComponent;
 class USpringArmComponent;
+
 
 
 
@@ -75,6 +78,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UCollectPickupComponent> CollectPickupComponent = {nullptr};
 
+	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
+	TObjectPtr<UCherryObjectiveComponent> CherryObjectiveComponent = {nullptr};
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Fire")
 	TObjectPtr<UAnimMontage> FireMontage = {nullptr};
 
@@ -83,7 +89,7 @@ public:
 	// void RequestAimAtTarget(const FVector& TargetLocation);
 	void RequestFire();
 
-	void OnActorDied();
+	void OnActorDied(TWeakObjectPtr<AController> DamageInstigator);
 
 private:
 	//InternValue
@@ -135,4 +141,6 @@ public: //simple Getter Functions
 	UFUNCTION(BlueprintCallable, Category = "Tank|Damage")
 	FVector GetLastHitDirection() const;
 	// FVector GetDesiredTargetRotation() const;
+
+	void GetScore(FObjectiveScore& Score) const;
 };

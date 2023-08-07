@@ -9,7 +9,7 @@
 
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnMaxHealthChangedDelegate, float /* NewMaxHealth */, float /* OldMaxHealth */, float /* CurrentHealth */)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnHeathChangedDelegate, float /* NewHealth */)
-DECLARE_MULTICAST_DELEGATE(FOnDeathDelegate)
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnDeathDelegate, TWeakObjectPtr<AController> /*Instigator*/)
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class HAMSTERTANK_API UHealthComponent : public UActorComponent, public ICollectPickupInterface
@@ -27,6 +27,7 @@ protected:
 public:
 	void Heal(float Amount);
 	void ReceiveFinalDamage(float FinalDamage);
+	void ReceiveFinalDamage(float FinalDamage, TWeakObjectPtr<AController> Instigator);
 	
 	bool IsAlive() const;
 	float GetCurrentHealth() const;

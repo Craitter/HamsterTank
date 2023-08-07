@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "EnemyTower.generated.h"
 
+class UObjectiveSubsystem;
 class UHandleDamageComponent;
 class UHealthComponent;
 class UCapsuleComponent;
@@ -195,7 +196,7 @@ public:
 
 	bool IsAlive() const;
 
-	void OnDeath() const;
+	void OnDeath(TWeakObjectPtr<AController> DamageInstigator) const;
 protected:
 
 	/**
@@ -330,4 +331,6 @@ private:
 	//so we trace at the right height, this is espacially useful when the rotation tower has its root at 0 instead of the center of the rotating tower
 	FVector InternOriginLocation = FVector::ZeroVector;
 	//Temp Intern Values
+
+	TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = {nullptr};
 };

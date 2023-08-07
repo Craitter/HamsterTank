@@ -3,6 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#define DEFAULT_SAVE_SLOT							TEXT("DefaultSlot")
+
 #if WITH_GAMEPLAY_DEBUGGER
 #include "GameplayDebugger.h"
 #include "Public\Debug\GameplayDebuggerCategory_Tank.h"

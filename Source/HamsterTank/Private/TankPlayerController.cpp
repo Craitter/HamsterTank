@@ -5,10 +5,12 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "ObjectiveSubsystem.h"
 #include "Blueprint/UserWidget.h"
 
 #include "Actors/TankBase.h"
 #include "Components/HealthComponent.h"
+#include "Widget/UISubsystem.h"
 
 
 ATankPlayerController::ATankPlayerController()
@@ -44,6 +46,24 @@ void ATankPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
+	const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
+	if(GameInstance.IsValid())
+	{
+		ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
+		if(ObjectiveSubsystem.IsValid())
+		{
+			ObjectiveSubsystem->RegisterPlayer(this);
+			ObjectiveSubsystem->OnGameEndDelegate.BindUObject(this, &ThisClass::OnGameIsEnding);
+		}
+		UISubsystem = GameInstance->GetSubsystem<UUISubsystem>();
+		if(UISubsystem.IsValid())
+		{
+			UISubsystem->UnPauseGameDelegate.AddUObject(this, &ThisClass::RequestUnPauseCallback);
+			UISubsystem->RestartLevelDelegate.AddUObject(this, &ThisClass::RestartLevel);
+			const TWeakObjectPtr<UUserWidget> Widget = UISubsystem->OpenWidget(GameOverlayClass);
+		}
+	}
+	
 	TankPawn = CastChecked<ATankBase>(InPawn);
 	if(TankPawn.IsValid())
 	{
@@ -53,16 +73,13 @@ void ATankPlayerController::OnPossess(APawn* InPawn)
 			PawnHealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnPlayerDied);
 		}
 	}
-	const TWeakObjectPtr<UUserWidget> Widget = CreateWidget<UUserWidget>(this, GameOverlay);
-	if(Widget.IsValid())
-	{
-		Widget->AddToViewport();
-	}
+	DisableInput(this);
 }
 
 void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	
 
 	const TWeakObjectPtr<ULocalPlayer> LocalPlayer = GetLocalPlayer();
 	if(!ensure(LocalPlayer.IsValid())) return;
@@ -76,16 +93,23 @@ void ATankPlayerController::BeginPlay()
 	{
 		EnhancedInputLocalPlayerSubsystem->AddMappingContext(IMC_MK_Default.LoadSynchronous(), 0);	
 	}
+	
 }
 
 void ATankPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if(ObjectiveSubsystem.IsValid())
+	{
+		ObjectiveSubsystem->UnregisterPlayer(this);
+	}
+	
 	if(EnhancedInputComponent.IsValid())
 	{
 		EnhancedInputComponent->RemoveBindingByHandle(DriveDelegateHandle);
 		EnhancedInputComponent->RemoveBindingByHandle(DriveStopDelegateHandle);
 		EnhancedInputComponent->RemoveBindingByHandle(FireDelegateHandle);
 		EnhancedInputComponent->RemoveBindingByHandle(AimDelegateHandle);
+		EnhancedInputComponent->RemoveBindingByHandle(PauseDelegateHandle);
 	}
 	
 	Super::EndPlay(EndPlayReason);
@@ -101,6 +125,20 @@ void ATankPlayerController::SetupInputComponent()
 	DriveStopDelegateHandle = EnhancedInputComponent->BindAction(IA_Drive, ETriggerEvent::Completed, this, &ATankPlayerController::RequestDriveCallback).GetHandle();
 	FireDelegateHandle = EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &ATankPlayerController::RequestFireCallback).GetHandle();
 	AimDelegateHandle = EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Triggered, this, &ATankPlayerController::RequestAimCallback).GetHandle();
+	PauseDelegateHandle = EnhancedInputComponent->BindAction(IA_Pause, ETriggerEvent::Triggered, this, &ATankPlayerController::RequestPauseCallback).GetHandle();
+}
+
+void ATankPlayerController::OnObjectiveTowerDestroyed()
+{
+	
+}
+
+void ATankPlayerController::OnGameIsEnding(FObjectiveScore& Score)
+{
+	if(TankPawn.IsValid())
+	{
+		TankPawn->GetScore(Score);
+	}
 }
 
 void ATankPlayerController::RequestDriveCallback(const FInputActionValue& Value)
@@ -150,9 +188,39 @@ void ATankPlayerController::RequestAimCallback(const FInputActionValue& Value)
 	}
 }
 
-void ATankPlayerController::OnPlayerDied()
+void ATankPlayerController::RequestPauseCallback()
+{
+	if(!UISubsystem.IsValid())
+	{
+		return;
+	}
+	const TWeakObjectPtr<UUserWidget> WidgetToFocus = UISubsystem->PauseGame();
+	if(WidgetToFocus == nullptr)
+	{
+		return;
+	}
+	SetPause(true);
+	SetShowMouseCursor(true);
+	FInputModeUIOnly Mode;
+	Mode.SetWidgetToFocus(WidgetToFocus->TakeWidget());
+	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+	SetInputMode(Mode);
+}
+
+void ATankPlayerController::RequestUnPauseCallback()
+{
+	SetPause(false);
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
+}
+
+void ATankPlayerController::OnPlayerDied(TWeakObjectPtr<AController> DamageInstigator)
 {
 	DisableInput(this);
+	if(UISubsystem.IsValid())
+	{
+		UISubsystem->NotifyPlayerDead();
+	}
 	//todo restart/open menu
 }
 

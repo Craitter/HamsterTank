@@ -3,28 +3,44 @@
 
 #include "Widget/BulletIconWidget.h"
 
+#include "Components/FireProjectileComponent.h"
 #include "Components/Image.h"
+#include "Components/TextBlock.h"
 
 
 bool UBulletIconWidget::Initialize()
 {
-	bIsFilled = false;
 	return Super::Initialize();
 }
 
-void UBulletIconWidget::SetIsFilledAmmo(bool bNewState)
+void UBulletIconWidget::NativePreConstruct()
 {
-	if(CurrentBulletImage != nullptr)
-	{
-		bIsFilled = bNewState;
+	Super::NativePreConstruct();
 
-		if(bIsFilled)
+	const TWeakObjectPtr<APawn> Pawn = GetOwningPlayerPawn();
+	if(Pawn.IsValid())
+	{
+		const TWeakObjectPtr<UFireProjectileComponent> FireProjectileComponent = Pawn->FindComponentByClass<UFireProjectileComponent>();
+		if(FireProjectileComponent.IsValid())
 		{
-			CurrentBulletImage->SetBrushFromTexture(FilledAmmo);
-		}
-		else
-		{
-			CurrentBulletImage->SetBrushFromTexture(UsedAmmo);
+			OnMaxAmmoChanged(FireProjectileComponent->GetMaxAmmo(), FireProjectileComponent->GetCurrentAmmo());
+			FireProjectileComponent->OnAmmoChanged.AddUObject(this, &ThisClass::OnAmmoChanged);
+			FireProjectileComponent->OnMaxAmmoChanged.AddUObject(this, &ThisClass::OnMaxAmmoChanged);
 		}
 	}
+}
+
+void UBulletIconWidget::OnAmmoChanged(int32 NewAmmo)
+{
+	if(AmmoCount != nullptr)
+	{
+		const FText Count = FText::FromString("{Amount}x");
+		FFormatNamedArguments Args;
+		Args.Add(TEXT("Amount"), NewAmmo);
+		AmmoCount->SetText(FText::Format(Count, Args));
+	}
+}
+
+void UBulletIconWidget::OnMaxAmmoChanged(int32 NewMaxAmmo, int32 CurrentAmmo)
+{
 }

@@ -19,6 +19,7 @@ void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	CurrentHealth = MaxHealth;
+	OnHeathChangedDelegateHandle.Broadcast(CurrentHealth);
 	// ...
 	
 }
@@ -26,16 +27,22 @@ void UHealthComponent::BeginPlay()
 void UHealthComponent::Heal(const float Amount)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth + Amount, 0, MaxHealth);
+	OnHeathChangedDelegateHandle.Broadcast(CurrentHealth);
 }
 
 void UHealthComponent::ReceiveFinalDamage(float FinalDamage)
+{
+	ReceiveFinalDamage(FinalDamage, nullptr);
+}
+
+void UHealthComponent::ReceiveFinalDamage(float FinalDamage, TWeakObjectPtr<AController> Instigator)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0, MaxHealth);
 	OnHeathChangedDelegateHandle.Broadcast(CurrentHealth);
 	UE_LOG(LogTemp, Warning , TEXT("NewHealth %f"), CurrentHealth);
 	if(!IsAlive())
 	{
-		OnDeathDelegateHandle.Broadcast();
+		OnDeathDelegateHandle.Broadcast(Instigator);
 		UE_LOG(LogTemp, Warning , TEXT("Dead"));
 	}
 }

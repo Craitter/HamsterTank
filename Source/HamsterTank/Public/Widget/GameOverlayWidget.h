@@ -3,9 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TankBaseWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "GameOverlayWidget.generated.h"
 
+class UButton;
+class UMenuAnchor;
+class UPauseMenuWidget;
+class UCalculatePointsWidget;
+class UVictoryWidget;
+class UDefeatWidget;
+class UImage;
+class UWidgetSwitcher;
+class UTextBlock;
+class UHealthBarWidget;
 class UBulletIconWidget;
 class UDynamicEntryBox;
 class UCanvasPanel;
@@ -13,21 +24,105 @@ class UCanvasPanel;
  * 
  */
 UCLASS()
-class HAMSTERTANK_API UGameOverlayWidget : public UUserWidget
+class HAMSTERTANK_API UGameOverlayWidget : public UTankBaseWidget
 {
 	GENERATED_BODY()
 public:
 
+	virtual bool Initialize() override;
+	
 	virtual void NativePreConstruct() override;
-	void OnAmmoChanged(int32 NewAmmo);
-	void OnMaxAmmoChanged(int32 NewMaxAmmo, int32 CurrentAmmo);
+
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
+	void OnScoreChanged(float NewScore);
+
+	
+	
+	void DisplayKill();
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 protected:
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCanvasPanel> CanvasPanel = {nullptr};
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UDynamicEntryBox> AmmoEntryBox = {nullptr};
+	TObjectPtr<UWidgetSwitcher> Switcher = {nullptr};
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UBulletIconWidget> Ammo = {nullptr};
 
-	TArray<TObjectPtr<UBulletIconWidget>> AmmoEntries;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UHealthBarWidget> HealthBar = {nullptr};
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> PlayTime = {nullptr};
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> InGameScore = {nullptr};
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPauseMenuWidget> PauseMenu = {nullptr};
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UDefeatWidget> Defeat = {nullptr};
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UVictoryWidget> Victory = {nullptr};
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UCalculatePointsWidget> CalculatePoints = {nullptr};
+
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> DisplayKillAnimation = {nullptr};
+
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> StartGameAnimation = {nullptr};
+
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> ContinueAnimation = {nullptr};
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> InstructionsButton = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	float ScoreIncreaseSteps = 1.0f;
+
+	UPROPERTY(EditAnywhere)
+	float ScoreDeltaPerStep = 10.0f;
+
+	UPROPERTY(EditAnywhere)
+	float ScoreIncreaseTimeSteps = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly)
+	bool bShouldDoStartGameAnimation = true;
+
+	void UpdateScore();
+
+	void OnGameWon();
+
+	void OnPlayerDeath();
+
+	void OnPauseGame();
+
+	void OnUnPauseGame();
+
+	UFUNCTION()
+	void OnInstructionsRead();
+
+	UFUNCTION()
+	void OnStartGameAnimationFinished();
+
+	
+
+	FWidgetAnimationDynamicEvent StartGameAnimationEvent;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UUserWidget> KillWidgetClass = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UUserWidget> StartWidgetClass = {nullptr};
+private:
+	float TargetScore = 0.0f;
+	FTimerHandle ScoreIncreaseHandle;
+
+	float TimeDelayInSeconds = 0.0f;
 };

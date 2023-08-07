@@ -43,6 +43,14 @@ AProjectileBase* UFireProjectileComponent::TryFireProjectile(APawn* InstigatorPa
 
 	//Spawning Projectile
 	const TWeakObjectPtr<AProjectileBase> NewProjectile = GetWorld()->SpawnActor<AProjectileBase>(BaseProjectile, ProjectileOrigin->GetComponentLocation(), SpawnRotation, SpawnParameters);
+
+	if(FireData.bApplyCooldown)
+	{
+		const float OutCooldown = FireData.bRandomizeCooldown ? FMath::FRandRange(FireData.MinCooldown, FireData.MaxCooldown) : FireData.FireCooldown;
+		GetOwner()->GetWorldTimerManager().SetTimer(FireCooldownTimerHandle, OutCooldown, false);
+	}
+	AddAmmoDelta(-1);
+	
 	if(NewProjectile.IsValid())
 	{
 		const TWeakObjectPtr<UTankProjectileMovementComponent> TankProjectileMovementComponent = NewProjectile->GetProjectileMovementComponent();
@@ -59,16 +67,10 @@ AProjectileBase* UFireProjectileComponent::TryFireProjectile(APawn* InstigatorPa
 			}
 			TankProjectileMovementComponent->SetVelocityInLocalSpace(FVector(OutSpeed, 0.0f, 0.0f));
 		}
-		if(FireData.bApplyCooldown)
-		{
-			const float OutCooldown = FireData.bRandomizeCooldown ? FMath::FRandRange(FireData.MinCooldown, FireData.MaxCooldown) : FireData.FireCooldown;
-			GetOwner()->GetWorldTimerManager().SetTimer(FireCooldownTimerHandle, OutCooldown, false);
-		}
-		AddAmmoDelta(-1);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error , TEXT("%s() Projectile couldnt be spawned"), *FString(__FUNCTION__));
+		UE_LOG(LogTemp, Warning , TEXT("%s() Projectile couldnt be spawned"), *FString(__FUNCTION__));
 	}
 	return NewProjectile.Get();
 }
@@ -119,6 +121,7 @@ void UFireProjectileComponent::BeginPlay()
 	Super::BeginPlay();
 
 	CurrentAmmo = StartAmmo;
+	OnAmmoChanged.Broadcast(CurrentAmmo);
 	OnMaxAmmoChanged.AddUObject(this, &ThisClass::SetMaxAmmo);
 	// ...
 	

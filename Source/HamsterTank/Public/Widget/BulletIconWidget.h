@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "BulletIconWidget.generated.h"
 
+class UTextBlock;
 class UImage;
 /**
  * 
@@ -17,19 +18,16 @@ class HAMSTERTANK_API UBulletIconWidget : public UUserWidget
 public:
 	virtual bool Initialize() override;
 
+	virtual void NativePreConstruct() override;
+	void OnAmmoChanged(int32 NewAmmo);
+	void OnMaxAmmoChanged(int32 NewMaxAmmo, int32 CurrentAmmo);
 protected:
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UImage> CurrentBulletImage = {nullptr};
+	TObjectPtr<UImage> AmmoImage = {nullptr};
 
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> FilledAmmo = {nullptr};
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> UsedAmmo = {nullptr};
+	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
+	TObjectPtr<UTextBlock> AmmoCount = {nullptr};
 
-	bool bIsFilled;
 
 public:
-	
-
-	void SetIsFilledAmmo(bool bNewState);
 };

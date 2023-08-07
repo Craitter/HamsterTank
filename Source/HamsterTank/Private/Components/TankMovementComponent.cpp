@@ -77,9 +77,7 @@ UTankMovementComponent::UTankMovementComponent()
 	NavAgentProps.bCanSwim = false;
 	NavAgentProps.bCanWalk = true;
 	ResetMoveState();
-#if ENABLE_DRAW_DEBUG && !NO_CVARS
-	CVarShowAllTankMovement->AsVariable()->SetOnChangedCallback(FConsoleVariableDelegate::CreateStatic(&UTankMovementComponent::OnToggleAllDebug));
-#endif
+
 }
 
 void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -246,6 +244,23 @@ FVector UTankMovementComponent::PredictLocationAfterSeconds(const float Seconds,
 void UTankMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+	if(CVarShowAllTankMovement.AsVariable() != nullptr)
+	{
+		CVarShowAllTankMovement->AsVariable()->SetOnChangedCallback(FConsoleVariableDelegate::CreateStatic(&UTankMovementComponent::OnToggleAllDebug));
+	}
+#endif
+}
+
+void UTankMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+// #if ENABLE_DRAW_DEBUG && !NO_CVARS
+// 	if(CVarShowAllTankMovement.AsVariable() != nullptr)
+// 	{
+// 		CVarShowAllTankMovement->AsVariable()->SetOnChangedCallback();
+// 	}
+// #endif
+	Super::EndPlay(EndPlayReason);
 }
 
 void UTankMovementComponent::DetermineDrivingState()
