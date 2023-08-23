@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GameOverlayWidget.generated.h"
 
+class USoundCue;
 class UButton;
 class UMenuAnchor;
 class UPauseMenuWidget;
@@ -83,6 +84,12 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> InstructionsButton = {nullptr};
 
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> DefeatSound = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> VictorySound = {nullptr};
+
 	UPROPERTY(EditAnywhere)
 	float ScoreIncreaseSteps = 1.0f;
 
@@ -98,7 +105,8 @@ protected:
 	void UpdateScore();
 
 	void OnGameWon();
-
+	
+	UFUNCTION()
 	void OnPlayerDeath();
 
 	void OnPauseGame();
@@ -125,4 +133,6 @@ private:
 	FTimerHandle ScoreIncreaseHandle;
 
 	float TimeDelayInSeconds = 0.0f;
+
+	float CurrentScore = 0.0f;
 };

@@ -10,13 +10,15 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/CollectPickupComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 class UCollectPickupComponent;
 // Sets default values
 APickupActor::APickupActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	CapsuleCollider = CreateDefaultSubobject<UCapsuleComponent>("CapsuleCollider");
 	if(!ensure(IsValid(CapsuleCollider))) return;
@@ -25,13 +27,33 @@ APickupActor::APickupActor()
 
 	SetRootComponent(CapsuleCollider);
 	CapsuleCollider->SetCapsuleHalfHeight(80.0f);
-	CapsuleCollider->SetCapsuleRadius(60.0f);
+	CapsuleCollider->SetCapsuleRadius(75.0f);
 	CapsuleCollider->SetCollisionProfileName(FName("OverlapOnlyPawn"));
 	PickupParticle->SetupAttachment(CapsuleCollider);
 	
 	const ConstructorHelpers::FObjectFinder<UDataTable> Pickup_Table(TEXT("/Game/Actors/Pickup/Pickups"));
 	PickupTable = Pickup_Table.Object;
 	if(!ensure(IsValid(PickupTable))) return;
+}
+
+bool APickupActor::HasBeenCollected() const
+{
+	return bHasBeenCollected;
+}
+
+void APickupActor::SetCollected()
+{
+	bHasBeenCollected = true;
+	if(IsValid(PickupParticle))
+	{
+		PickupParticle->Deactivate();
+		PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, CurrentPickupData.PickupNiagara, GetActorLocation());
+		PickupParticle->OnSystemFinished.AddDynamic(this, &ThisClass::OnNiagaraFinished);
+	}
+	if(IsValid(CurrentPickupData.PickupSound))
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, CurrentPickupData.PickupSound, GetActorLocation(), GetActorRotation());
+	}
 }
 
 // Called when the game starts or when spawned
@@ -87,25 +109,20 @@ void APickupActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-// Called every frame
-void APickupActor::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 
 void APickupActor::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if(bHasBeenCollected)
+	{
+		return;
+	}
 	if(IsValid(OtherActor) && OtherActor != this)
 	{
 		const TWeakObjectPtr<UCollectPickupComponent> PickupComponent = OtherActor->FindComponentByClass<UCollectPickupComponent>();
 		if(PickupComponent.IsValid())
 		{
-			PickupComponent->CollectPickup(CurrentPickupData);
-			PickupParticle->Deactivate();
-			PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, CurrentPickupData.PickupNiagara, GetActorLocation());
-			PickupParticle->OnSystemFinished.AddDynamic(this, &ThisClass::OnNiagaraFinished);
+			PickupComponent->CollectPickup(CurrentPickupData, this);
 		}
 	}
 }

@@ -80,6 +80,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Physics", meta=(ClampMin="1.0", UIMin="1.0", ForceUnits="cm"))
 	float BreakingDistance = 1000.0f;
 
+	//this value scales with max speed and breaking distance, it reaches value from 20 or more to 0.0001 depending on that, making the last bit not feel to natural(inresponsive) you can adjust this number
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Physics", meta=(ClampMin="1.0", UIMin="1.0", ForceUnits="m/ss"))
+	float MinBreakingDeceleration = 5.0f;
+
 	//The highest possible speed when driving forward Default Value = 60Km/h / 3.6 = 16.66667
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement|Speed", meta = (ClampMin="1.0", UIMin="1.0", ForceUnits="m/s"))
 	float ForwardMaxSpeed = 16.66667f;

@@ -314,7 +314,8 @@ void UTankMovementComponent::SetBreakingDrivingValues()
 {
 	CurrentMaxSpeed = ForwardMaxSpeed;
 	const float InBreakingDistance = (BreakingDistance / 100) * ( Velocity.Size() / ForwardMaxSpeed);
-	const float BreakingAcceleration = Velocity.SizeSquared() / (2 * InBreakingDistance);
+	float BreakingAcceleration = Velocity.SizeSquared() / (2 * InBreakingDistance);
+	BreakingAcceleration = BreakingAcceleration < MinBreakingDeceleration ? MinBreakingDeceleration : BreakingAcceleration;
 	CurrentDrivingForce = Mass * BreakingAcceleration;
 }
 

@@ -3,6 +3,9 @@
 
 #include "Components/HealthComponent.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+
 // Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
 {
@@ -42,6 +45,10 @@ void UHealthComponent::ReceiveFinalDamage(float FinalDamage, TWeakObjectPtr<ACon
 	UE_LOG(LogTemp, Warning , TEXT("NewHealth %f"), CurrentHealth);
 	if(!IsAlive())
 	{
+		if(IsValid(DeathSound))
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetOwner()->GetActorLocation(), GetOwner()->GetActorRotation());
+		}
 		OnDeathDelegateHandle.Broadcast(Instigator);
 		UE_LOG(LogTemp, Warning , TEXT("Dead"));
 	}
@@ -79,12 +86,13 @@ bool UHealthComponent::IsImmortal() const
 	return bIsImmortal;
 }
 
-void UHealthComponent::OnPickupCollected(const EPickupType& Type, const float& Amount)
+void UHealthComponent::OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup)
 {
-	if(Type != EPickupType::Heal)
+	if(Type != EPickupType::Heal || !CollectedPickup.IsValid() || CollectedPickup->HasBeenCollected() || CurrentHealth + UE_FLOAT_NORMAL_THRESH >= MaxHealth)
 	{
 		return;
 	}
+	CollectedPickup->SetCollected();
 	Heal(Amount);
 }
 

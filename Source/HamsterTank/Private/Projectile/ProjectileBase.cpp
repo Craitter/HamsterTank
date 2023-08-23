@@ -10,14 +10,16 @@
 
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Projectile/TankProjectileMovementComponent.h"
+#include "Sound/SoundCue.h"
 
 
 // Sets default values
 AProjectileBase::AProjectileBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
 	if(!ensure(IsValid(Sphere))) return;
@@ -54,13 +56,6 @@ void AProjectileBase::BeginPlay()
 float AProjectileBase::ComputeDamage()
 {
 	return BaseDamage;
-}
-
-// Called every frame
-void AProjectileBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void AProjectileBase::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -110,6 +105,10 @@ void AProjectileBase::OnProjectileHit(const FHitResult& Result)
 	if(IsValid(Result.GetActor()))
 	{
 		Result.GetActor()->TakeDamage(ComputeDamage(), PointDamageEvent, GetInstigatorController(), GetInstigator());
+	}
+	if(IsValid(ProjectileExplosion))
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ProjectileExplosion, GetActorLocation(), GetActorRotation());
 	}
 	Destroy();
 }

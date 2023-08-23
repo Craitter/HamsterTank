@@ -7,7 +7,9 @@
 #include "Interface/CollectPickupInterface.h"
 #include "HealthComponent.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnMaxHealthChangedDelegate, float /* NewMaxHealth */, float /* OldMaxHealth */, float /* CurrentHealth */)
+class USoundCue;
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnMaxHealthChangedDelegate, float /* NewMaxHealth */, float /* OldMaxHealth */,
+                                       float /* CurrentHealth */)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnHeathChangedDelegate, float /* NewHealth */)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDeathDelegate, TWeakObjectPtr<AController> /*Instigator*/)
 
@@ -23,7 +25,9 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-	
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> DeathSound = {nullptr};
 public:
 	void Heal(float Amount);
 	void ReceiveFinalDamage(float FinalDamage);
@@ -41,7 +45,7 @@ public:
 	FOnDeathDelegate OnDeathDelegateHandle;
 	FOnMaxHealthChangedDelegate OnMaxHealthChangedDelegateHandle;
 
-	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount) override;
+	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup) override;
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "Health")

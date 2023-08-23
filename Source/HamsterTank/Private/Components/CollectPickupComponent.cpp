@@ -5,13 +5,15 @@
 
 #include "Actors/PickupActor.h"
 #include "Components/Interface/CollectPickupInterface.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 // Sets default values for this component's properties
 UCollectPickupComponent::UCollectPickupComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	// ...
 }
@@ -51,15 +53,8 @@ void UCollectPickupComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 }
 
 
-// Called every frame
-void UCollectPickupComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
-}
-
-void UCollectPickupComponent::CollectPickup(const FPickupData& Data)
+void UCollectPickupComponent::CollectPickup(const FPickupData& Data, TWeakObjectPtr<APickupActor> CollectedPickup)
 {
 	for (const auto Component : BoundComponents)
 	{
@@ -69,6 +64,6 @@ void UCollectPickupComponent::CollectPickup(const FPickupData& Data)
 			OnPickupCollectedDelegateHandle.RemoveAll(Component);
 		}
 	}
-	OnPickupCollectedDelegateHandle.Broadcast(Data.Type, Data.Amount);
+	OnPickupCollectedDelegateHandle.Broadcast(Data.Type, Data.Amount, CollectedPickup);
 }
 

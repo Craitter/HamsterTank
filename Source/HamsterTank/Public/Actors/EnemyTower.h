@@ -196,7 +196,9 @@ public:
 
 	bool IsAlive() const;
 
-	void OnDeath(TWeakObjectPtr<AController> DamageInstigator) const;
+	void OnDeath(TWeakObjectPtr<AController> DamageInstigator);
+
+	void OnAnimFinshed();
 protected:
 
 	/**

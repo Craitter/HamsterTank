@@ -23,7 +23,7 @@ class UTankHamsterGameInstance;
 DECLARE_MULTICAST_DELEGATE(FOnGamePause)
 DECLARE_MULTICAST_DELEGATE(FOnGameUnPause)
 DECLARE_MULTICAST_DELEGATE(FOnRestartLevel)
-DECLARE_MULTICAST_DELEGATE(FOnPlayerDeath)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDeath);
 DECLARE_MULTICAST_DELEGATE(FOnGameWon)
 DECLARE_MULTICAST_DELEGATE(FOnPointsCalculated)
 
@@ -41,8 +41,9 @@ public:
 	FOnGameUnPause UnPauseGameDelegate;
 	void UnPauseGame() const;
 
+	
 	FOnRestartLevel RestartLevelDelegate;
-	void RestartLevel() const;
+	void RestartLevel();
 
 	void BackToMainMenu() const;
 
@@ -62,7 +63,7 @@ public:
 	void AddNameToLeaderboardList(FString Name, float Points);
 
 	TWeakObjectPtr<UUserWidget> OpenWidget(TSubclassOf<UTankBaseWidget> WidgetToOpen);
-
+	UPROPERTY(BlueprintAssignable)
 	FOnPlayerDeath OnPlayerDeath;
 	FOnGameWon OnGameWon;
 	FOnPointsCalculated OnPointsCalculated;

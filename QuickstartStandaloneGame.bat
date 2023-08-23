@@ -1,0 +1,1 @@
+start "" "E:\Unreal Engine\UE_5.2\Engine\Binaries\Win64\UnrealEditor.exe" ""E:\Projekte\HamsterTank\HamsterTank.uproject"" -game -debug -ResX=800 -ResY=900 -WinX=0 -WinY=20 -log -trace=default,gpu

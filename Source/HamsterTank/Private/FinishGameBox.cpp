@@ -8,6 +8,7 @@
 
 AFinishGameBox::AFinishGameBox()
 {
+	PrimaryActorTick.bCanEverTick = false;
 	if(GetCollisionComponent() != nullptr)
 	{
 		GetCollisionComponent()->SetCollisionProfileName("OverlapOnlyPawn");
@@ -43,9 +44,10 @@ void AFinishGameBox::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp
 		const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
 		if(GameInstance.IsValid())
 		{
-			TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
+			const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
 			if(ObjectiveSubsystem.IsValid())
 			{
+				DestroyConstructedComponents();
 				ObjectiveSubsystem->EndGame(OverlappedPawn->GetController());
 			}
 		}

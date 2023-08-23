@@ -75,7 +75,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 public:
-	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount) override;
+	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup) override;
 	
 	// UFUNCTION(BlueprintCallable, Category = "Firing")
 	AProjectileBase* TryFireProjectile(APawn* InstigatorPawn, const FFireProjectileData& FireData);
@@ -110,6 +110,9 @@ public:
 	FOnMaxAmmoChanged OnMaxAmmoChanged;
 
 protected:
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> FireProjectileSound = {nullptr};
+	
 	TWeakObjectPtr<USceneComponent> ProjectileOrigin = {nullptr};
 
 	UPROPERTY(EditAnywhere, Category = "FireProjectile|Origin")

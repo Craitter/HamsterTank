@@ -7,6 +7,7 @@
 #include "InputMappingContext.h"
 #include "TankPlayerController.generated.h"
 
+class USoundCue;
 struct FObjectiveScore;
 class UTankBaseWidget;
 class UUISubsystem;
@@ -36,6 +37,12 @@ public:
 	void OnObjectiveTowerDestroyed();
 
 	void OnGameIsEnding(FObjectiveScore& Score);
+
+	void SetMouseSensitivity(float NewValue);
+
+	void LoadMouseSensitivy();
+
+	float GetMouseSens(){return SavedMouseSensitivy;}
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
@@ -45,7 +52,10 @@ protected:
 	
 	virtual void SetupInputComponent() override;
 
-	
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> BackgroundMusic = {nullptr};
+
+	TWeakObjectPtr<UAudioComponent> PlayingBackgroundMusic = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_Drive = {nullptr};
@@ -70,6 +80,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UTankBaseWidget> GameOverlayClass = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly)
+	FRuntimeFloatCurve MouseSensityTranslation;
 private:
 	void RequestDriveCallback(const FInputActionValue& Value);
 
@@ -94,6 +107,10 @@ private:
 	uint32 FireDelegateHandle = 0;
 	uint32 AimDelegateHandle = 0;
 	uint32 PauseDelegateHandle = 0;
+
+
+	TWeakObjectPtr<UInputModifierScalar> MouseScalar = {nullptr};
+	float SavedMouseSensitivy = 1.0f;
 };
 
 

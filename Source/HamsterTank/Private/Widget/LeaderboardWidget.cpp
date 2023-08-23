@@ -22,8 +22,6 @@ void ULeaderboardWidget::Refresh()
 		return;
 	}
 	Leaderboard->ClearChildren();
-	const TWeakObjectPtr<ULeaderboardEntryWidget> EmptyEntry = CreateWidget<ULeaderboardEntryWidget>(this, LeaderboardEntryClass);
-	Leaderboard->AddChild(EmptyEntry.Get());
 	TArray<FLeaderboardEntry> SaveGameLeaderboardEntries;
 	UISubsystem->GetLeaderboardList(SaveGameLeaderboardEntries);
 	int32 Rank = 1;

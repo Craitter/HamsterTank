@@ -25,5 +25,5 @@ class HAMSTERTANK_API ICollectPickupInterface
 public:
 	void ListenToCollectComponent(FOnPickupCollectedDelegate& OnPickupCollectedDelegate);
 	UFUNCTION()
-	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount) = 0;
+	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup) = 0;
 };

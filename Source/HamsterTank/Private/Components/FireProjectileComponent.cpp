@@ -5,8 +5,10 @@
 
 
 #include "Components/ProjectileOriginComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Projectile/ProjectileBase.h"
 #include "Projectile/TankProjectileMovementComponent.h"
+#include "Sound/SoundCue.h"
 
 // Sets default values for this component's properties
 UFireProjectileComponent::UFireProjectileComponent()
@@ -44,6 +46,11 @@ AProjectileBase* UFireProjectileComponent::TryFireProjectile(APawn* InstigatorPa
 	//Spawning Projectile
 	const TWeakObjectPtr<AProjectileBase> NewProjectile = GetWorld()->SpawnActor<AProjectileBase>(BaseProjectile, ProjectileOrigin->GetComponentLocation(), SpawnRotation, SpawnParameters);
 
+	if(IsValid(FireProjectileSound))
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireProjectileSound, ProjectileOrigin->GetComponentLocation(), ProjectileOrigin->GetComponentRotation());
+	}
+	
 	if(FireData.bApplyCooldown)
 	{
 		const float OutCooldown = FireData.bRandomizeCooldown ? FMath::FRandRange(FireData.MinCooldown, FireData.MaxCooldown) : FireData.FireCooldown;
@@ -127,12 +134,13 @@ void UFireProjectileComponent::BeginPlay()
 	
 }
 
-void UFireProjectileComponent::OnPickupCollected(const EPickupType& Type, const float& Amount)
+void UFireProjectileComponent::OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup)
 {
-	if(Type != Ammo)
+	if(Type != Ammo || !CollectedPickup.IsValid() || CollectedPickup->HasBeenCollected() || CurrentAmmo >= MaxAmmo)
 	{
 		return;
 	}
+	CollectedPickup->SetCollected();
 	AddAmmoDelta(Amount);
 }
 

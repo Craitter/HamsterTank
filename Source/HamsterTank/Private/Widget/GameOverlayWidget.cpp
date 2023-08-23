@@ -5,9 +5,12 @@
 
 #include "ObjectiveSubsystem.h"
 #include "TankHamsterGameInstance.h"
+#include "TankPlayerController.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 #include "Widget/DefeatWidget.h"
 #include "Widget/PauseMenuWidget.h"
 #include "Widget/UISubsystem.h"
@@ -48,7 +51,7 @@ void UGameOverlayWidget::NativePreConstruct()
 		}
 		if(UISubsystem.IsValid())
 		{
-			UISubsystem->OnPlayerDeath.AddUObject(this, &ThisClass::OnPlayerDeath);
+			UISubsystem->OnPlayerDeath.AddDynamic(this, &ThisClass::OnPlayerDeath);
 			UISubsystem->OnGameWon.AddUObject(this, &ThisClass::OnGameWon);
 			UISubsystem->PauseGameDelegate.AddUObject(this, &ThisClass::OnPauseGame);
 			UISubsystem->UnPauseGameDelegate.AddUObject(this, &ThisClass::OnUnPauseGame);
@@ -133,9 +136,6 @@ void UGameOverlayWidget::UpdateScore()
 	check(GetWorld())
 	if(InGameScore != nullptr)
 	{
-		float CurrentScore = 0.0f;
-		LexFromString(CurrentScore, *InGameScore->GetText().ToString());
-		UE_LOG(LogTemp, Warning , TEXT("score %f"), CurrentScore);
 		float DeltaThisStep = 0.0f;
 		do
 		{
@@ -159,7 +159,7 @@ void UGameOverlayWidget::OnGameWon()
 	{
 		Switcher->SetActiveWidget(Victory);
 		Victory->PlayAnimationForward(Victory->VictoryAnimation);
-		
+		UGameplayStatics::PlaySound2D(this, VictorySound);
 		
 		if(GetOwningPlayer())
 		{
@@ -180,6 +180,8 @@ void UGameOverlayWidget::OnPlayerDeath()
 		Switcher->SetActiveWidget(Defeat);
 		if(GetOwningPlayer())
 		{
+			UGameplayStatics::PlaySound2D(this, DefeatSound);
+			Defeat->PlayDefeatAnimation();
 			GetOwningPlayer()->SetShowMouseCursor(true);
 			FInputModeUIOnly ModeUIOnly;
 			ModeUIOnly.SetWidgetToFocus(TakeWidget());
@@ -207,8 +209,13 @@ void UGameOverlayWidget::OnUnPauseGame()
 
 void UGameOverlayWidget::OnInstructionsRead()
 {
-	if(Switcher != nullptr)
+	if(Switcher != nullptr && GetOwningPlayer() != nullptr)
 	{
+		TWeakObjectPtr<ATankPlayerController> Controller = Cast<ATankPlayerController>(GetOwningPlayer());
+		if(Controller.IsValid())
+		{
+			Controller->LoadMouseSensitivy();
+		}
 		GetOwningPlayer()->SetShowMouseCursor(false);
 		GetOwningPlayer()->SetInputMode(FInputModeGameOnly());
 		StopAnimation(ContinueAnimation);

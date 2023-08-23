@@ -17,8 +17,12 @@ class HAMSTERTANK_API UDefeatWidget : public UTankBaseWidget
 
 public:
 	virtual void NativePreConstruct() override;
-	
+
+	void PlayDefeatAnimation();
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UOverlayButtonsWidget> Buttons = {nullptr};
+	
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> LoseAnimation = {nullptr};
 };

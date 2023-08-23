@@ -50,8 +50,9 @@ void UUISubsystem::UnPauseGame() const
 	UnPauseGameDelegate.Broadcast();
 }
 
-void UUISubsystem::RestartLevel() const
+void UUISubsystem::RestartLevel()
 {
+	TotalTimeDelay = 0.0f;
 	RestartLevelDelegate.Broadcast();
 }
 
@@ -171,7 +172,23 @@ void UUISubsystem::AddNameToLeaderboardList(FString Name, float Points)
 		FLeaderboardEntry Entry;
 		Entry.Score = Points;
 		Entry.Name = Name;
-		LeaderboardSaveGame->Leaderboard.Add(Entry);
+		bool bIsNewName = true;
+		for (auto& LeaderboardEntry : LeaderboardSaveGame->Leaderboard)
+		{
+			if(LeaderboardEntry.Name.Equals(Entry.Name))
+			{
+				bIsNewName = false;
+				if(Entry.Score > LeaderboardEntry.Score)
+				{
+					LeaderboardEntry.Score = Entry.Score;
+				}
+				break;
+			}
+		}
+		if(bIsNewName)
+		{
+			LeaderboardSaveGame->Leaderboard.Add(Entry);
+		}
 		LeaderboardSaveGame->Leaderboard.Sort();
 		
 		UGameplayStatics::SaveGameToSlot(LeaderboardSaveGame, DEFAULT_SAVE_SLOT, 0);

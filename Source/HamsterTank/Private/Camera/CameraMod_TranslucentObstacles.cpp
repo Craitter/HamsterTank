@@ -17,78 +17,15 @@ static TAutoConsoleVariable<bool> CVarShowAllTank(
 
 bool UCameraMod_TranslucentObstacles::ProcessViewRotation(AActor* ViewTarget, float DeltaTime, FRotator& OutViewRotation,
                                                      FRotator& OutDeltaRot)
-{
-	check(GetWorld());
-	
+{	
 	const bool bOut = Super::ProcessViewRotation(ViewTarget, DeltaTime, OutViewRotation, OutDeltaRot);
-	//reference @see: https://alfredbaudisch.com/blog/gamedev/unreal-engine-ue/unreal-engine-actors-transparent-block-camera-occlusion-see-through/
-	//this is not doing anything to the view rotation, it is just the best place to add this functionality (Only Player Character, easy to enable and disable and all values needed are easy to get)
-
-	if(bDisabled || CameraOwner == nullptr || ViewTarget == nullptr)
+	
+	TImeSinceLastMaterialUpdate += DeltaTime;
+	if(TImeSinceLastMaterialUpdate > MaterialUpdateTime || TImeSinceLastMaterialUpdate < -0.2f)
 	{
-		return bOut;
+		UpdateMaterial(ViewTarget);
+		TImeSinceLastMaterialUpdate = 0.0f;
 	}
-	if(ViewTarget != CachedViewTarget.Get())
-	{
-		CacheViewTarget(ViewTarget);
-	}
-	const FVector Start = CameraOwner->GetCameraLocation();
-	const FVector End = ViewTarget->GetActorLocation();
-	
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic); //Can Add more Objects to look for here
-	
-	FCollisionQueryParams CollisionQueryParams;
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(ViewTarget);
-	CollisionQueryParams.AddIgnoredActors(ActorsToIgnore); // Can Add more Actors to ignore here
-	
-	TArray<FHitResult> OutHits;
-
-	const bool bGotHits = GetWorld()->SweepMultiByObjectType(
-		OutHits, Start, End , FQuat::Identity, ObjectQueryParams,
-		FCollisionShape::MakeSphere(CollisionSphereRadius),
-		CollisionQueryParams);
-
-#if ENABLE_DRAW_DEBUG && !NO_CVARS
-
-	if(bDebug || CVarShowAllTank->GetBool())
-	{
-		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, -1.0f, 0.0f, 4.0f);
-	}
-#endif
-	
-	
-	if(bGotHits)
-	{
-		TSet<const AActor*> NewHitActors;
-		for (FHitResult Hit : OutHits)
-		{
-#if ENABLE_DRAW_DEBUG && !NO_CVARS
-
-			if(bDebug || CVarShowAllTank->GetBool())
-			{
-				DrawDebugPoint(GetWorld(), Hit.ImpactPoint, 8.0f, FColor::Red, false, -1.0f, 0.0f);
-			}
-#endif
-			
-			TWeakObjectPtr<AActor> HitActor = Hit.GetActor();
-			CameraObstacleHit(HitActor);
-			NewHitActors.Add(HitActor.Get());
-		}
-		for (auto& Elem : CameraBlockingActors)
-		{
-			if (!NewHitActors.Contains(Elem.Value.Actor.Get()) && Elem.Value.bIsHidden)
-			{
-				CameraObstacleIsGone(Elem.Value);
-			}
-		}
-	}
-	else
-	{
-		ForceShowAllCameraObstacles();
-	}
-	
 	return bOut;
 }
 
@@ -289,5 +226,77 @@ void UCameraMod_TranslucentObstacles::SafeClearCachedHits()
 	for (const TWeakObjectPtr<AActor> ToRemove : KeysToRemove)
 	{
 		CameraBlockingActors.Remove(ToRemove);
+	}
+}
+
+void UCameraMod_TranslucentObstacles::UpdateMaterial(AActor* ViewTarget)
+{
+	//reference @see: https://alfredbaudisch.com/blog/gamedev/unreal-engine-ue/unreal-engine-actors-transparent-block-camera-occlusion-see-through/
+	//this is not doing anything to the view rotation, it is just the best place to add this functionality (Only Player Character, easy to enable and disable and all values needed are easy to get)
+	check(GetWorld());
+	
+	if(bDisabled || CameraOwner == nullptr || ViewTarget == nullptr)
+	{
+		return;
+	}
+	if(ViewTarget != CachedViewTarget.Get())
+	{
+		CacheViewTarget(ViewTarget);
+	}
+	const FVector Start = CameraOwner->GetCameraLocation();
+	const FVector End = ViewTarget->GetActorLocation();
+	
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic); //Can Add more Objects to look for here
+	
+	FCollisionQueryParams CollisionQueryParams;
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(ViewTarget);
+	CollisionQueryParams.AddIgnoredActors(ActorsToIgnore); // Can Add more Actors to ignore here
+	
+	TArray<FHitResult> OutHits;
+
+	const bool bGotHits = GetWorld()->SweepMultiByObjectType(
+		OutHits, Start, End , FQuat::Identity, ObjectQueryParams,
+		FCollisionShape::MakeSphere(CollisionSphereRadius),
+		CollisionQueryParams);
+
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+
+	if(bDebug || CVarShowAllTank->GetBool())
+	{
+		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, -1.0f, 0.0f, 4.0f);
+	}
+#endif
+	
+	
+	if(bGotHits)
+	{
+		TSet<const AActor*> NewHitActors;
+		for (FHitResult Hit : OutHits)
+		{
+#if ENABLE_DRAW_DEBUG && !NO_CVARS
+
+			if(bDebug || CVarShowAllTank->GetBool())
+			{
+				DrawDebugPoint(GetWorld(), Hit.ImpactPoint, 8.0f, FColor::Red, false, -1.0f, 0.0f);
+			}
+#endif
+			
+			TWeakObjectPtr<AActor> HitActor = Hit.GetActor();
+			CameraObstacleHit(HitActor);
+			NewHitActors.Add(HitActor.Get());
+		}
+		for (auto& Elem : CameraBlockingActors)
+		{
+			if (!NewHitActors.Contains(Elem.Value.Actor.Get()) && Elem.Value.bIsHidden)
+			{
+				CameraObstacleIsGone(Elem.Value);
+			}
+		}
+	}
+	else
+	{
+		ForceShowAllCameraObstacles();
 	}
 }

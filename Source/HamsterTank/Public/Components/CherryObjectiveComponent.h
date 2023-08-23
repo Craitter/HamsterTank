@@ -24,10 +24,8 @@ protected:
 
 	float CollectedCherries = 0.0f;
 public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount) override;
+	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup) override;
 
 	FOnCherryCountChangedDelegate OnCherryCountChangedDelegateHandle;
 

@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ProjectileBase.generated.h"
 
+class USoundCue;
 class UNiagaraSystem;
 class UNiagaraComponent;
 class UTankProjectileMovementComponent;
@@ -49,9 +50,11 @@ protected:
 	float BaseDamage = 1.0f;
 
 	virtual float ComputeDamage();
+
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> ProjectileExplosion = {nullptr};
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY()
 	TArray<AActor*> Overlaps;

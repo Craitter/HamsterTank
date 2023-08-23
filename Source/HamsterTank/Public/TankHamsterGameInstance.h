@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Sound/SoundCue.h"
 #include "TankHamsterGameInstance.generated.h"
 
 /**
@@ -15,19 +16,30 @@ class HAMSTERTANK_API UTankHamsterGameInstance : public UGameInstance
 	GENERATED_BODY()
 
 public:
-	void StartGame() const;
+	UTankHamsterGameInstance();
+	
+	void StartGame();
 
-	void OpenMainMenu() const;
-
-	void SetSoundMuted(bool bNewValue);
+	void OpenMainMenu();
 
 	void SetSoundPercentage(float NewPercentage);
 
 	float GetSoundPercentage() const;
 
 	bool IsSoundMuted() const;
+
+	void PlayBackgroundMusic(TObjectPtr<USoundCue>);
+
+	void ClearBackgroundMusic();
 private:
 	bool bIsMuted = false;
 
 	float SoundPercentage = 1.0f;
+
+	TObjectPtr<USoundMix> MixerForVolume = {nullptr};
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> BackgroundMusic = {nullptr};
+	UPROPERTY()
+	TObjectPtr<USoundCue> GameMusic = {nullptr};
 };

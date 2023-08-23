@@ -10,7 +10,7 @@
 
 class ICollectPickupInterface;
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPickupCollectedDelegate, const EPickupType&, const float& /*Amount*/);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPickupCollectedDelegate, const EPickupType&, const float& /*Amount*/, TWeakObjectPtr<APickupActor>);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class HAMSTERTANK_API UCollectPickupComponent : public UActorComponent
@@ -27,11 +27,9 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	FOnPickupCollectedDelegate OnPickupCollectedDelegateHandle;
-	void CollectPickup(const FPickupData& Data);
+	void CollectPickup(const FPickupData& Data, TWeakObjectPtr<APickupActor> CollectedPickup);
 
 private:
 	TArray<ICollectPickupInterface*> BoundComponents;

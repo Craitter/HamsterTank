@@ -8,7 +8,7 @@ UCherryObjectiveComponent::UCherryObjectiveComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	// ...
 }
@@ -23,21 +23,13 @@ void UCherryObjectiveComponent::BeginPlay()
 	
 }
 
-
-// Called every frame
-void UCherryObjectiveComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UCherryObjectiveComponent::OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
-}
-
-void UCherryObjectiveComponent::OnPickupCollected(const EPickupType& Type, const float& Amount)
-{
-	if(Type != Cherry)
+	if(Type != Cherry || !CollectedPickup.IsValid() || CollectedPickup->HasBeenCollected())
 	{
 		return;
 	}
+	CollectedPickup->SetCollected();
 	CollectedCherries++;
 	OnCherryCountChangedDelegateHandle.Broadcast(CollectedCherries);
 

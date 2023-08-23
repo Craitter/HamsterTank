@@ -13,3 +13,8 @@ void UDefeatWidget::NativePreConstruct()
 		Buttons->ShowResumeButton(false);
 	}
 }
+
+void UDefeatWidget::PlayDefeatAnimation()
+{
+	PlayAnimationForward(LoseAnimation);
+}

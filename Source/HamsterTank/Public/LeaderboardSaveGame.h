@@ -40,4 +40,7 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	TArray<FLeaderboardEntry> Leaderboard;
+
+	UPROPERTY(VisibleAnywhere, Category = Basic)
+	float MouseSensitivity;
 };

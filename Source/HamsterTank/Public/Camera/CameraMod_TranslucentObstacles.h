@@ -64,6 +64,9 @@ protected:
 	
 	FOnHideBlockingActorDelegate OnHideBlockingActorDelegateHandle;
 	FOnBlockingActorDisappearedDelegate OnBlockingActorDisappearedDelegateHandle;
+
+	UPROPERTY(EditAnywhere)
+	float MaterialUpdateTime = 0.1f;
 private:
 	void CacheViewTarget(TWeakObjectPtr<AActor> ViewTarget);
 
@@ -86,4 +89,8 @@ private:
 	float CollisionSphereRadius = -1.0f;
 
 	FTimerHandle CleanCachedHitsTimerHandle;
+
+	float TImeSinceLastMaterialUpdate = -1.0f;
+
+	void UpdateMaterial(AActor* ViewTarget);
 };

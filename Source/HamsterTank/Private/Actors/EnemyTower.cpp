@@ -13,6 +13,7 @@
 #include "Components/HealthComponent.h"
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/TankMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 
 #if ENABLE_DRAW_DEBUG && !NO_CVARS
@@ -48,11 +49,15 @@ AEnemyTower::AEnemyTower()
 	
 	SetRootComponent(CapsuleCollider);
 	Base->SetupAttachment(CapsuleCollider);
+	Base->PrimaryComponentTick.bCanEverTick = false;
 	Tower->SetupAttachment(Base);
+	Tower->PrimaryComponentTick.bCanEverTick = false;
 	ProjectileOrigin->SetupAttachment(Tower);
 	AnimSkeleton->SetupAttachment(CapsuleCollider);
 	AnimSkeleton->SetVisibility(false);
 	AnimSkeleton->SetRelativeScale3D(FVector(1.23f));
+	AnimSkeleton->PrimaryComponentTick.bCanEverTick = true;
+	
 
 	HealthComponent->SetMaxHealth(2.0f); //explain
 	
@@ -102,7 +107,10 @@ void AEnemyTower::BeginPlay()
 		bPredictRotatedLocation = false;
 		TowerFireType = ETowerFireType::Max;
 	}
-	
+	if(IsValid(AnimSkeleton))
+	{
+		AnimSkeleton->SetComponentTickEnabled(false);
+	}
 	OnPlayerFoundDelegateHandle.BindUObject(this, &ThisClass::OnPlayerFound);
 	OnSinRotationFinishedDelegateHandle.BindUObject(this, &ThisClass::OnSinRotationFinished);
 
@@ -136,6 +144,7 @@ void AEnemyTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AEnemyTower::UpdateTargeting(const float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(EnemyTower::UpdateTargeting);
 	if(VerifyTargetValid())
 	{
 		float ProjectileSpeed;
@@ -183,6 +192,7 @@ void AEnemyTower::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	TRACE_CPUPROFILER_EVENT_SCOPE(EnemyTower::Tick);
 	if(ShouldSkipUpdate())
 	{
 		return;
@@ -219,7 +229,7 @@ bool AEnemyTower::IsAlive() const
 	return false;
 }
 
-void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator) const
+void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator)
 {
 	if(ObjectiveSubsystem.IsValid())
 	{
@@ -227,15 +237,26 @@ void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator) const
 	}
 	if(IsValid(AnimSkeleton) && IsValid(Tower) && IsValid(Base) && IsValid(CapsuleCollider))
 	{
+		AnimSkeleton->SetComponentTickEnabled(true);
 		Tower->SetVisibility(false);
 		Base->SetVisibility(false);
 		AnimSkeleton->SetVisibility(true);
 		AnimSkeleton->PlayAnimation(DeathAnimation, false);
 		CapsuleCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		FTimerHandle Handle;
+		GetWorldTimerManager().SetTimer(Handle, this, &ThisClass::OnAnimFinshed, 3.0f, false);
 		
 		FVector SpawnLocation = GetActorLocation();
 		SpawnLocation.Z -= CapsuleCollider->GetScaledCapsuleHalfHeight() - 20.0f;
 		GetWorld()->SpawnActor<APickupActor>(APickupActor::StaticClass(), SpawnLocation, GetActorRotation());
+	}
+}
+
+void AEnemyTower::OnAnimFinshed()
+{
+	if(IsValid(AnimSkeleton))
+	{
+		AnimSkeleton->SetComponentTickEnabled(false);
 	}
 }
 
@@ -284,6 +305,14 @@ void AEnemyTower::OnPlayerFound(const TWeakObjectPtr<APawn> InPlayerPawn)
 
 void AEnemyTower::LookForPlayer()
 {
+	
+
+	const TWeakObjectPtr<APawn> PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if(PlayerPawn.IsValid() && GetDistanceToSelf2D(PlayerPawn->GetActorLocation()) > GetMaxRange())
+	{
+		return;
+	}
+	TRACE_CPUPROFILER_EVENT_SCOPE(EnemyTower::LookForPlayer);
 	const TWeakObjectPtr<UWorld> World = GetWorld();
 	check(World.Get())
 
@@ -469,6 +498,7 @@ float AEnemyTower::GetDesiredProjectileTravelTime(const FVector& Location) const
 
 void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(EnemyTower::RotateTowerSin);
 	if(IsValid(Tower))
 	{
 		CurrentTurningTime += DeltaTime;

@@ -14,13 +14,14 @@ void USoundSliderWidget::NativePreConstruct()
 	{
 		if(SoundSlider != nullptr)
 		{
+			SoundSlider->OnValueChanged.AddDynamic(this, &ThisClass::OnSoundSliderValueChanged);
 			const float SoundPercentage = UISubsystem->GetSoundPercentage();
 			SoundSlider->SetValue(SoundPercentage);
 		}
 	}
 }
 
-void USoundSliderWidget::OnSoundSliderValueChanged(float NewValue) const
+void USoundSliderWidget::OnSoundSliderValueChanged(float NewValue)
 {
 	if(GameInstance.IsValid())
 	{

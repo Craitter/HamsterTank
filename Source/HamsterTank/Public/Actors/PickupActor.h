@@ -8,6 +8,7 @@
 #include "PickupActor.generated.h"
 
 
+class USoundCue;
 class UCapsuleComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
@@ -43,6 +44,9 @@ struct FPickupData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UNiagaraSystem> PickupNiagara = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USoundCue> PickupSound = {nullptr};
 	
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0", ClampMax = "100", ForceUnits = "Percentage"))
 	float ProbabilityMin = 1.0f; 
@@ -59,6 +63,10 @@ class HAMSTERTANK_API APickupActor : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APickupActor();
+
+	bool HasBeenCollected() const;
+
+	void SetCollected();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -79,9 +87,7 @@ protected:
 
 	UPROPERTY(EditInstanceOnly)
 	TEnumAsByte<EPickupType> DefinedType = None;
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+public:
 	
 	UFUNCTION()
 	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
@@ -91,4 +97,6 @@ public:
 private:
 	FPickupData CurrentPickupData;
 
+	bool bHasBeenCollected = false;
+	
 };

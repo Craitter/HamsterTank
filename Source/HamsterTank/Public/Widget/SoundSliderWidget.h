@@ -14,13 +14,12 @@ UCLASS()
 class HAMSTERTANK_API USoundSliderWidget : public UTankBaseWidget
 {
 	GENERATED_BODY()
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<USlider> SoundSlider = {nullptr};
-
 public:
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<USlider> SoundSlider = {nullptr};
+	
 	virtual void NativePreConstruct() override;
 protected:
 	UFUNCTION()
-	void OnSoundSliderValueChanged(float NewValue) const;
+	void OnSoundSliderValueChanged(float NewValue);
 };
