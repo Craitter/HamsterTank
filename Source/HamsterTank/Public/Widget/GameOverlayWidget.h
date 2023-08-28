@@ -17,8 +17,8 @@ class UDefeatWidget;
 class UImage;
 class UWidgetSwitcher;
 class UTextBlock;
-class UHealthBarWidget;
-class UBulletIconWidget;
+class UHUDHealthCountWidget;
+class UHUDBulletCountWidget;
 class UDynamicEntryBox;
 class UCanvasPanel;
 /**
@@ -47,12 +47,6 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> Switcher = {nullptr};
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UBulletIconWidget> Ammo = {nullptr};
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UHealthBarWidget> HealthBar = {nullptr};
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> PlayTime = {nullptr};

@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Widget/SoundSliderWidget.h"
+
+#include "Widget/MenuWidgets/SoundSliderWidget.h"
 
 #include "TankHamsterGameInstance.h"
 #include "Components/Slider.h"

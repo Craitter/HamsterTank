@@ -27,8 +27,13 @@ public:
 	
 	void AddScoreDelta(float DeltaScore);
 
+	void AddCherryDelta(int32 DeltaCherries);
+
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnScoreChangedDelegate, float)
 	FOnScoreChangedDelegate OnScoreChangedDelegateHandle;
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnCherryCollectedDelegate, int32)
+	FOnCherryCollectedDelegate OnCherryCollectedDelegateHandle;
 	
 	void SetOwningPlayer(const TWeakObjectPtr<AController> InOwningPlayer)
 	{
@@ -36,7 +41,7 @@ public:
 	}
 	float GetCurrentScore() const {return Score;}
 
-	void SetCherries(const float CherryAmount)
+	void SetCherries(const int32 CherryAmount)
 	{
 		Cherries = CherryAmount;
 	}
@@ -58,7 +63,7 @@ public:
 		return Score;
 	}
 
-	float GetCherries() const
+	int32 GetCherries() const
 	{
 		return Cherries;
 	}
@@ -111,7 +116,7 @@ private:
 	TWeakObjectPtr<AController> OwningPlayer = {nullptr};
 	float Score = 0.0f;
 
-	float Cherries = 0.0f;
+	int32 Cherries = 0.0f;
 
 	float Health = 0.0f;
 
@@ -131,6 +136,8 @@ public:
 	void RegisterPlayer(TWeakObjectPtr<AController> Player);
 	void UnregisterPlayer(TWeakObjectPtr<AController> Player);
 
+	void CherryCollected(TWeakObjectPtr<AController> Player, int32 Delta);
+	
 	void TowerDestroyed(TWeakObjectPtr<AController> Player);
 
 	void EndGame(TWeakObjectPtr<AController> Player);

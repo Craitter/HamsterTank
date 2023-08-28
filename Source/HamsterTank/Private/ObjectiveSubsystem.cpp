@@ -4,14 +4,22 @@
 #include "ObjectiveSubsystem.h"
 #include "Widget/UISubsystem.h"
 
-#include "TankPlayerController.h"
-
 
 
 void FObjectiveScore::AddScoreDelta(const float DeltaScore)
 {
 	Score += DeltaScore;
 	OnScoreChangedDelegateHandle.Broadcast(Score);
+}
+
+void FObjectiveScore::AddCherryDelta(int32 DeltaCherries)
+{
+	Cherries += DeltaCherries;
+	if(Cherries < 0)
+	{
+		Cherries = 0;
+	}
+	OnCherryCollectedDelegateHandle.Broadcast(Cherries);
 }
 
 void UObjectiveSubsystem::RegisterPlayer(TWeakObjectPtr<AController> Player)
@@ -25,7 +33,17 @@ void UObjectiveSubsystem::UnregisterPlayer(TWeakObjectPtr<AController> Player)
 	Players.Remove(Player);
 }
 
-void UObjectiveSubsystem::TowerDestroyed(TWeakObjectPtr<AController> Player)
+void UObjectiveSubsystem::CherryCollected(const TWeakObjectPtr<AController> Player, const int32 Delta)
+{
+	FObjectiveScore* Score = Players.Find(Player);
+	if(Score == nullptr)
+	{
+		return;
+	}
+	Score->AddCherryDelta(Delta);
+}
+
+void UObjectiveSubsystem::TowerDestroyed(const TWeakObjectPtr<AController> Player)
 {
 	FObjectiveScore* Score = Players.Find(Player);
 	if(Score == nullptr)

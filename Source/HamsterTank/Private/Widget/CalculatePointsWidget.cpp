@@ -166,7 +166,7 @@ void UCalculatePointsWidget::SetCalculateCherries()
 	{
 		return;
 	}
-	AmountCherries->SetText(FText::AsNumber(FMath::RoundToInt32(Score->GetCherries())));
+	AmountCherries->SetText(FText::AsNumber((Score->GetCherries())));
 	CurrentTextBlock = Score_Cherries;
 	CurrentValue = 0.0f;
 	CurrentStepSize = Score->GetCherryScore()/Score->Steps;

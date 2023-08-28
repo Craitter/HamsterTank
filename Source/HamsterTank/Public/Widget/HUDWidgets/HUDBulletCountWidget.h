@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "BulletIconWidget.generated.h"
+#include "HUDBulletCountWidget.generated.h"
 
 class UTextBlock;
 class UImage;
@@ -12,15 +12,13 @@ class UImage;
  * 
  */
 UCLASS()
-class HAMSTERTANK_API UBulletIconWidget : public UUserWidget
+class HAMSTERTANK_API UHUDBulletCountWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
 	virtual bool Initialize() override;
 
-	virtual void NativePreConstruct() override;
-	void OnAmmoChanged(int32 NewAmmo);
-	void OnMaxAmmoChanged(int32 NewMaxAmmo, int32 CurrentAmmo);
+	void OnAmmoChanged(int32 NewAmmo) const;
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> AmmoImage = {nullptr};

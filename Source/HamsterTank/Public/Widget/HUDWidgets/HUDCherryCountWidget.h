@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "DisplayCherryWidget.generated.h"
+#include "HUDCherryCountWidget.generated.h"
 
 class UImage;
 class UTextBlock;
@@ -12,14 +12,14 @@ class UTextBlock;
  * 
  */
 UCLASS()
-class HAMSTERTANK_API UDisplayCherryWidget : public UUserWidget
+class HAMSTERTANK_API UHUDCherryCountWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
-	virtual void NativePreConstruct() override;
+	virtual bool Initialize() override;
 
-	void OnCherryCountChanged(float NewCherryCount);
+	void OnCherryCountChanged(int32 NewCherryCount) const;
 protected:
 
 	UPROPERTY(meta = (BindWidget))
