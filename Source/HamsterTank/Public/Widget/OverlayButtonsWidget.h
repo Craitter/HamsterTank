@@ -38,7 +38,4 @@ private:
 	void OnRestartPressed();
 	UFUNCTION()
 	void OnHomePressed();
-
-	void OnRestartChoiceMade(EPromptReply Reply);
-	void OnHomeChoiceMade(EPromptReply Reply);
 };

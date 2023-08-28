@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "TankBaseWidget.h"
-#include "DataTypes/PromptTypes.h"
 #include "InGameButtonWidget.generated.h"
 
 // enum class EPromptReply : uint8;

@@ -60,40 +60,12 @@ void UOverlayButtonsWidget::OnRestartPressed()
 	if(UISubsystem.IsValid())
 	{
 		UISubsystem->RestartLevel();
-		// bool bWasSuccessful;
-		// FOnPlayerPromptChoice* Choice = UISubsystem->CreatePrompt(EPromptType::ConfirmCancel, EPromptMessageType::RestartLevel, bWasSuccessful);
-		// if(bWasSuccessful && Choice != nullptr)
-		// {
-		// 	Choice->AddUObject(this, &UOverlayButtonsWidget::OnRestartChoiceMade);
-		// }
 	}
 }
 
 void UOverlayButtonsWidget::OnHomePressed()
 {
 	if(UISubsystem.IsValid())
-	{
-		UISubsystem->BackToMainMenu();
-		// bool bWasSuccessful;
-		// FOnPlayerPromptChoice* Choice = UISubsystem->CreatePrompt(EPromptType::ConfirmCancel, EPromptMessageType::QuitMainMenu, bWasSuccessful);
-		// if(bWasSuccessful && Choice != nullptr)
-		// {
-		// 	Choice->AddUObject(this, &UOverlayButtonsWidget::OnHomeChoiceMade);
-		// }
-	}
-}
-
-void UOverlayButtonsWidget::OnRestartChoiceMade(EPromptReply Reply)
-{
-	if(UISubsystem.IsValid() && Reply == EPromptReply::Confirm)
-	{
-		UISubsystem->RestartLevel();
-	}
-}
-
-void UOverlayButtonsWidget::OnHomeChoiceMade(EPromptReply Reply)
-{
-	if(UISubsystem.IsValid() && Reply == EPromptReply::Confirm)
 	{
 		UISubsystem->BackToMainMenu();
 	}

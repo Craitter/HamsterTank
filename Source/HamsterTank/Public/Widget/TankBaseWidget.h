@@ -22,14 +22,7 @@ class HAMSTERTANK_API UTankBaseWidget : public UUserWidget
 
 public:
 	virtual void NativePreConstruct() override;
-
-	void EnablePrompt(TWeakObjectPtr<UPromptWidget> PromptToDisplay) const;
-	void DisablePrompt();
-protected:
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UMenuAnchor> PromptAnchor = {nullptr};
-
-	
+protected:	
 	TWeakObjectPtr<UUISubsystem> UISubsystem = {nullptr};
 
 	TWeakObjectPtr<UTankHamsterGameInstance> GameInstance = {nullptr};

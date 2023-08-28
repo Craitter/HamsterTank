@@ -7,7 +7,6 @@
 #include "TankHamsterGameInstance.h"
 #include "HamsterTank/HamsterTank.h"
 #include "Kismet/GameplayStatics.h"
-#include "Widget/PromptWidget.h"
 #include "Widget/TankBaseWidget.h"
 
 void UUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -75,63 +74,6 @@ void UUISubsystem::AddTimeDelay(float DeltaDelay)
 }
 
 void UUISubsystem::ResetTimeDelay()
-{
-	
-}
-
-FOnPlayerPromptChoice* UUISubsystem::CreatePrompt(EPromptType PromptType, EPromptMessageType MessageType,
-                                                  bool& WasSuccessful) const
-{
-	if(ActiveWidget != nullptr)
-	{
-		const TObjectPtr<UPromptWidget> Prompt = CreateWidget<UPromptWidget>(GetGameInstance(), GenericPromptClass);
-		if(Prompt != nullptr)
-		{
-			FText PromptMessage;
-			FText PromptHeader;
-			GetPromptMessageByType(MessageType, PromptMessage, PromptHeader);
-			ActiveWidget->EnablePrompt(Prompt);
-			Prompt->SetPromptType(PromptType);
-			Prompt->SetPromptText(PromptMessage, PromptHeader);
-			FOnPlayerPromptChoice* Choice = Prompt->GetPromptReplyDelegate();
-			if(Choice != nullptr)
-			{
-				Choice->AddUObject(this, &UUISubsystem::OnPromptChoiceMade);
-			}
-			WasSuccessful = true;
-			return nullptr;
-		}
-	}
-	WasSuccessful = false;
-	return nullptr;
-}
-
-void UUISubsystem::GetPromptMessageByType(const EPromptMessageType& PromptMessageType, FText& PromptMessage,
-	FText& MessageHeader) const
-{
-	switch (PromptMessageType)
-	{
-	case EPromptMessageType::QuitGame:
-			PromptMessage = QuitGameText;
-			MessageHeader =	QuitGameHeader;
-		break;
-	case EPromptMessageType::QuitMainMenu:
-			PromptMessage = QuitMainMenuText;
-			MessageHeader =	QuitMainMenuHeader;
-		break;
-	case EPromptMessageType::RestartLevel:
-			PromptMessage = RestartLevelText;
-			MessageHeader =	RestartLevelHeader;
-		break;
-	case EPromptMessageType::PlayerName:
-			PromptMessage =	PlayerNameText;
-			MessageHeader =	PlayerNameHeader;
-		break;
-	default: ;
-	}
-}
-
-void UUISubsystem::OnPromptChoiceMade(EPromptReply Reply) const
 {
 	
 }

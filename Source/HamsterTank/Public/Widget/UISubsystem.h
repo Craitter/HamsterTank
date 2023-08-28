@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DataTypes/PromptTypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "UISubsystem.generated.h"
 
@@ -11,8 +10,6 @@
 class ULeaderboardSaveGame;
 struct FLeaderboardEntry;
 class UTankBaseWidget;
-enum class EPromptMessageType : uint8;
-enum class EPromptType : uint8;
 class UGameOverlayWidget;
 class UTankHamsterGameInstance;
 /**
@@ -51,12 +48,6 @@ public:
 	void AddTimeDelay(float DeltaDelay);
 	void ResetTimeDelay();
 	float TotalTimeDelay = 0.0f;
-	FOnPlayerPromptChoice* CreatePrompt(EPromptType PromptType, EPromptMessageType MessageType,
-	                                    bool& WasSuccessful) const;
-	void GetPromptMessageByType(const EPromptMessageType& PromptMessageType, FText& PromptMessage, FText& MessageHeader) const;
-
-	UFUNCTION()
-	void OnPromptChoiceMade(EPromptReply Reply) const;
 
 	void GetLeaderboardList(TArray<FLeaderboardEntry>& CurrentLeaderboard);
 
@@ -71,22 +62,7 @@ public:
 	void NotifyPlayerDead();
 	void NotifyGameWon();
 protected:
-	TSubclassOf<UUserWidget> GenericPromptClass = {nullptr};
 	TWeakObjectPtr<UTankHamsterGameInstance> GameInstance = {nullptr};
 	TWeakObjectPtr<UTankBaseWidget> ActiveWidget = {nullptr};
 	TObjectPtr<ULeaderboardSaveGame> LeaderboardSaveGame = {nullptr};
-
-private:
-
-	FText QuitGameText;
-	FText QuitGameHeader;
-
-	FText QuitMainMenuText;
-	FText QuitMainMenuHeader;
-
-	FText RestartLevelText;
-	FText RestartLevelHeader;
-
-	FText PlayerNameText;
-	FText PlayerNameHeader;
 };
