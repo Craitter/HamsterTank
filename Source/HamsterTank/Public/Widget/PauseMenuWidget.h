@@ -6,7 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "PauseMenuWidget.generated.h"
 
-class USoundSliderWidget;
+class UGenericSliderWidget;
 class UOverlayButtonsWidget;
 /**
  * 
@@ -21,6 +21,6 @@ protected:
 	TObjectPtr<UOverlayButtonsWidget> Buttons = {nullptr};
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<USoundSliderWidget> SoundSlider = {nullptr};
+	TObjectPtr<UGenericSliderWidget> SoundSlider = {nullptr};
 	
 };

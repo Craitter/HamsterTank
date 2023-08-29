@@ -18,18 +18,6 @@ void UUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	RestartLevelDelegate.AddUObject(this, &UUISubsystem::ResetTimeDelay);
 }
 
-float UUISubsystem::GetSoundPercentage() const
-{
-	if(GameInstance.IsValid())
-	{
-		return GameInstance->GetSoundPercentage();
-	}
-	else
-	{
-		return 0.0f;
-	}
-}
-
 TWeakObjectPtr<UUserWidget> UUISubsystem::PauseGame() const
 {
 	PauseGameDelegate.Broadcast();

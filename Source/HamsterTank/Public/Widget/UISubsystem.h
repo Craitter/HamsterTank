@@ -31,7 +31,6 @@ class HAMSTERTANK_API UUISubsystem : public UGameInstanceSubsystem
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	float GetSoundPercentage() const;
 
 	FOnGamePause PauseGameDelegate;
 	TWeakObjectPtr<UUserWidget> PauseGame() const;

@@ -18,6 +18,7 @@ class HAMSTERTANK_API UHUDBulletCountWidget : public UUserWidget
 public:
 	virtual bool Initialize() override;
 
+	UFUNCTION()
 	void OnAmmoChanged(int32 NewAmmo) const;
 protected:
 	UPROPERTY(meta = (BindWidget))

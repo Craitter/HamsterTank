@@ -7,7 +7,7 @@
 #include "MainMenuWidget.generated.h"
 
 class ULeaderboardWidget;
-class USoundSliderWidget;
+class UGenericSliderWidget;
 class UScrollBox;
 class UWidgetSwitcher;
 class USlider;
@@ -36,7 +36,7 @@ protected:
 	TObjectPtr<UButton> DesktopButton = {nullptr};
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<USoundSliderWidget> SoundSlider = {nullptr};
+	TObjectPtr<UGenericSliderWidget> SoundSlider = {nullptr};
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> BackButton = {nullptr};

@@ -19,6 +19,7 @@ class HAMSTERTANK_API UHUDCherryCountWidget : public UUserWidget
 public:
 	virtual bool Initialize() override;
 
+	UFUNCTION()
 	void OnCherryCountChanged(int32 NewCherryCount) const;
 protected:
 

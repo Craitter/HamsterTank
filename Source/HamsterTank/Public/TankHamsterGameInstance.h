@@ -7,6 +7,7 @@
 #include "Sound/SoundCue.h"
 #include "TankHamsterGameInstance.generated.h"
 
+enum class ESliderType : uint8;
 /**
  * 
  */
@@ -22,9 +23,12 @@ public:
 
 	void OpenMainMenu();
 
-	void SetSoundPercentage(float NewPercentage);
-
-	float GetSoundPercentage() const;
+	
+	void SetSliderValue(float NewValue, ESliderType Slider);
+	float GetSliderValue(ESliderType Slider);
+	void HandleSliderChanged(float NewValue, ESliderType Slider) const;
+	void MouseSensitivityChanged(float NewValue) const;
+	void MasterVolumeChanged(float NewValue) const;
 
 	bool IsSoundMuted() const;
 
@@ -36,10 +40,14 @@ private:
 
 	float SoundPercentage = 1.0f;
 
-	TObjectPtr<USoundMix> MixerForVolume = {nullptr};
-
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> BackgroundMusic = {nullptr};
 	UPROPERTY()
 	TObjectPtr<USoundCue> GameMusic = {nullptr};
+	UPROPERTY()
+	TObjectPtr<USoundMix> DefaultMix = {nullptr};
+	UPROPERTY()
+	TObjectPtr<USoundClass> DefaultSoundClass = {nullptr};
+
+	TMap<ESliderType, float> SliderValues;
 };
