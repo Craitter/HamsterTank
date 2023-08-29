@@ -124,6 +124,8 @@ private:
 	UPROPERTY()
 	UTextBlock* CurrentTextBlock = {nullptr};
 
+	float InitialTimeDelay = 0.0f;
+	
 	void SetCalculateBase();
 	void SetCalculateCherries();
 	void SetCalculateBullet();

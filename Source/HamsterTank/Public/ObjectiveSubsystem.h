@@ -22,6 +22,7 @@ struct FObjectiveScore
 
 public:
 	
+	
 	UPROPERTY(EditDefaultsOnly)
 	float Steps = 200.0f;
 	
@@ -128,11 +129,13 @@ private:
 
 
 UCLASS()
-class HAMSTERTANK_API UObjectiveSubsystem : public UGameInstanceSubsystem
+class HAMSTERTANK_API UObjectiveSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 	void RegisterPlayer(TWeakObjectPtr<AController> Player);
 	void UnregisterPlayer(TWeakObjectPtr<AController> Player);
 
@@ -140,15 +143,15 @@ public:
 	
 	void TowerDestroyed(TWeakObjectPtr<AController> Player);
 
-	void EndGame(TWeakObjectPtr<AController> Player);
+	UFUNCTION()
+	void GatherScore();
+	static void GetScoreForPawn(TWeakObjectPtr<APawn> Pawn, FObjectiveScore* Score);
 
 	TMulticastDelegate<void(float)>* GetOnScoreChangedDelegate(TWeakObjectPtr<APlayerController> Player);
 
 	FObjectiveScore* GetScore(TWeakObjectPtr<AController> Player);
 
 	FOnTowerDestroyed OnTowerDestroyed;
-
-	FOnGameEndDelegate OnGameEndDelegate;
 
 protected:
 	UPROPERTY()

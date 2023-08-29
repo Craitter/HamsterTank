@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Widget/DefeatWidget.h"
+
+#include "Widget/MainWidgets/DefeatWidget.h"
 
 #include "Widget/OverlayButtonsWidget.h"
 
@@ -12,6 +13,7 @@ void UDefeatWidget::NativePreConstruct()
 	{
 		Buttons->ShowResumeButton(false);
 	}
+	PlayDefeatAnimation();
 }
 
 void UDefeatWidget::PlayDefeatAnimation()

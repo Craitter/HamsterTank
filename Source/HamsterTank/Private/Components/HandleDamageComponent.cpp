@@ -34,8 +34,7 @@ void UHandleDamageComponent::OnOwnerTakePointDamage(AActor* DamagedActor, float 
 	FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
 	const TWeakObjectPtr<AActor> Owner = GetOwner();
-	if(!Owner.IsValid() || !AssociatedHealthComponent.IsValid() ||
-		!AssociatedHealthComponent->IsAlive() || AssociatedHealthComponent->IsImmortal())
+	if(!Owner.IsValid() || !AssociatedHealthComponent.IsValid() || !AssociatedHealthComponent->IsAlive())
 	{
 		return;
 	}

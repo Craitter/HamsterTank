@@ -19,5 +19,5 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UTankBaseWidget> MainMenuWidget = {nullptr};
+	TSubclassOf<UUserWidget> MainMenuWidget = {nullptr};
 };

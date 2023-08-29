@@ -10,6 +10,8 @@
  * 
  */
 
+enum class ESliderType : uint8;
+
 USTRUCT(BlueprintType)
 struct FLeaderboardEntry
 {
@@ -40,7 +42,7 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	TArray<FLeaderboardEntry> Leaderboard;
-
+	
 	UPROPERTY(VisibleAnywhere, Category = Basic)
-	float MouseSensitivity;
+	TMap<ESliderType, float> SliderValues;
 };

@@ -3,8 +3,9 @@
 
 #include "FinishGameBox.h"
 
-#include "ObjectiveSubsystem.h"
 #include "Components/ShapeComponent.h"
+#include "HamsterTank/HamsterTankGameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 
 AFinishGameBox::AFinishGameBox()
 {
@@ -41,15 +42,12 @@ void AFinishGameBox::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp
 	const TWeakObjectPtr<APawn> OverlappedPawn = Cast<APawn>(OtherActor);
 	if(OverlappedPawn.IsValid() && OverlappedPawn->IsPlayerControlled())
 	{
-		const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
-		if(GameInstance.IsValid())
+		DestroyConstructedComponents();
+		const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase =
+			Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
+		if(HamsterTankGameModeBase.IsValid())
 		{
-			const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
-			if(ObjectiveSubsystem.IsValid())
-			{
-				DestroyConstructedComponents();
-				ObjectiveSubsystem->EndGame(OverlappedPawn->GetController());
-			}
+			HamsterTankGameModeBase->EndMatch();
 		}
 	}
 }

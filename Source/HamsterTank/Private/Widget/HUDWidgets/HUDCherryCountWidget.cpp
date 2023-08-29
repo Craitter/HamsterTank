@@ -12,7 +12,7 @@ bool UHUDCherryCountWidget::Initialize()
 
 	const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
 	if(!ensure(GameInstance.IsValid())) return false;
-	const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
+	const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
 	if(!ensure(ObjectiveSubsystem.IsValid())) return false;
 	
 	FObjectiveScore* Score = ObjectiveSubsystem->GetScore(GetOwningPlayer());

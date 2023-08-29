@@ -9,15 +9,16 @@
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
-#include "Widget/LeaderboardWidget.h"
+#include "HamsterTank/HamsterTankGameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "Widget/OverlayButtonsWidget.h"
-#include "Widget/UISubsystem.h"
+#include "Widget/Leaderboard/LeaderboardWidget.h"
 
 void UCalculatePointsWidget::Start()
 {
-	if(GameInstance.IsValid())
+	if(GetWorld())
 	{
-		const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
+		const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
 		if(ObjectiveSubsystem.IsValid())
 		{
 			Score = ObjectiveSubsystem->GetScore(GetOwningPlayer());
@@ -30,6 +31,12 @@ void UCalculatePointsWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
+	const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase = Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if(HamsterTankGameModeBase.IsValid())
+	{
+		InitialTimeDelay = HamsterTankGameModeBase->GetInitialTimeDelay();
+	}
+	
 	if(Buttons)
 	{
 		Buttons->ShowResumeButton(false);
@@ -95,9 +102,9 @@ void UCalculatePointsWidget::OnTextCommittedCallback(const FText& Text, ETextCom
 
 void UCalculatePointsWidget::OnNameConfirmed()
 {
-	if(UISubsystem.IsValid() && Name && TotalScore)
+	if(GameInstance.IsValid() && Name && TotalScore)
 	{
-		UISubsystem->AddNameToLeaderboardList(Name->GetText().ToString(), TotalPoints);
+		GameInstance->AddNameToLeaderboardList(Name->GetText().ToString(), TotalPoints);
 		TotalPoints = 0.0f;
 	}
 	if(Switcher && LeaderboardWidget)
@@ -215,11 +222,13 @@ void UCalculatePointsWidget::SetCalculateHealth()
 
 void UCalculatePointsWidget::SetCalculateTime()
 {
-	if(!Score || !TimeAmount || PointTimeCurve.GetRichCurveConst() == nullptr || !UISubsystem.IsValid())
+	if(!Score || !TimeAmount || PointTimeCurve.GetRichCurveConst() == nullptr)
 	{
 		return;
 	}
-	const FTimespan Time = FTimespan::FromSeconds(GetWorld()->GetTimeSeconds() - UISubsystem->GetGameTimeDelay());
+
+	
+	const FTimespan Time = FTimespan::FromSeconds(GetWorld()->GetTimeSeconds() - InitialTimeDelay);
 	FNumberFormattingOptions NumberFormattingOptions;
 	NumberFormattingOptions.AlwaysSign = false;
 	NumberFormattingOptions.UseGrouping = true;
@@ -241,7 +250,6 @@ void UCalculatePointsWidget::SetCalculateTime()
 
 	TotalPoints += CurrentTopEnd;
 
-	UISubsystem->ResetTimeDelay();
 }
 
 void UCalculatePointsWidget::SetCalculateTotal()

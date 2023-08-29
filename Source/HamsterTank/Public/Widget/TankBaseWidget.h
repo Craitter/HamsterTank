@@ -6,10 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "TankBaseWidget.generated.h"
 
-class UOverlay;
-class UUISubsystem;
-class UPromptWidget;
-class UMenuAnchor;
+
+
 class UTankHamsterGameInstance;
 // class UUISubsystem;
 /**
@@ -23,7 +21,6 @@ class HAMSTERTANK_API UTankBaseWidget : public UUserWidget
 public:
 	virtual void NativePreConstruct() override;
 protected:	
-	TWeakObjectPtr<UUISubsystem> UISubsystem = {nullptr};
 
 	TWeakObjectPtr<UTankHamsterGameInstance> GameInstance = {nullptr};
 };

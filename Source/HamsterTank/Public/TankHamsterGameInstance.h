@@ -7,6 +7,8 @@
 #include "Sound/SoundCue.h"
 #include "TankHamsterGameInstance.generated.h"
 
+struct FLeaderboardEntry;
+class ULeaderboardSaveGame;
 enum class ESliderType : uint8;
 /**
  * 
@@ -18,23 +20,28 @@ class HAMSTERTANK_API UTankHamsterGameInstance : public UGameInstance
 
 public:
 	UTankHamsterGameInstance();
-	
+
+	virtual void Init() override;
 	void StartGame();
 
 	void OpenMainMenu();
 
-	
+	float GetMouseSensivity();
 	void SetSliderValue(float NewValue, ESliderType Slider);
 	float GetSliderValue(ESliderType Slider);
 	void HandleSliderChanged(float NewValue, ESliderType Slider) const;
 	void MouseSensitivityChanged(float NewValue) const;
 	void MasterVolumeChanged(float NewValue) const;
 
-	bool IsSoundMuted() const;
+	TWeakObjectPtr<ULeaderboardSaveGame> GetCurrentSaveGame() const;
 
-	void PlayBackgroundMusic(TObjectPtr<USoundCue>);
+	void PlayBackgroundMusic(TObjectPtr<USoundCue>) const;
 
 	void ClearBackgroundMusic();
+
+	void GetLeaderboardList(TArray<FLeaderboardEntry>& CurrentLeaderboard);
+
+	void AddNameToLeaderboardList(FString PlayerName, float Points);
 private:
 	bool bIsMuted = false;
 
@@ -49,5 +56,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<USoundClass> DefaultSoundClass = {nullptr};
 
+	UPROPERTY()
 	TMap<ESliderType, float> SliderValues;
+
+	TObjectPtr<ULeaderboardSaveGame> LeaderboardSaveGame = {nullptr};
+
+	
 };

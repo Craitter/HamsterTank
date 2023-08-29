@@ -16,13 +16,17 @@ bool UHUDHealthCountWidget::Initialize()
 	}
 
 	const TWeakObjectPtr<APawn> OwningPawn = GetOwningPlayerPawn();
-	if(!ensure(OwningPawn != nullptr)) return false;
+	if(OwningPawn.IsValid())
+	{
+		const TWeakObjectPtr<UHealthComponent> PlayersHealthComponent = OwningPawn->FindComponentByClass<UHealthComponent>();
+		if(PlayersHealthComponent.IsValid())
+		{
+			PlayersHealthComponent->OnHeathChangedDelegateHandle.AddUObject(this, &ThisClass::DisplayHealth);
+			DisplayHealth(PlayersHealthComponent->GetCurrentHealth());
+		}
+	}
 
-	const TWeakObjectPtr<UHealthComponent> PlayersHealthComponent = OwningPawn->FindComponentByClass<UHealthComponent>();
-	if(!ensureMsgf(PlayersHealthComponent.IsValid(), TEXT("Owning Pawn has no Valid HealthComponent %s"), __FUNCTION__)) return false;
 	
-	PlayersHealthComponent->OnHeathChangedDelegateHandle.AddUObject(this, &ThisClass::DisplayHealth);
-	DisplayHealth(PlayersHealthComponent->GetCurrentHealth());
 
 	return true;
 }

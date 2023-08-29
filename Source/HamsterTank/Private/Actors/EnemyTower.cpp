@@ -5,6 +5,7 @@
 #include "Actors/EnemyTower.h"
 
 
+#include "HamsterTankGameState.h"
 #include "ObjectiveSubsystem.h"
 #include "Actors/PickupActor.h"
 #include "Components/CapsuleComponent.h"
@@ -13,6 +14,7 @@
 #include "Components/HealthComponent.h"
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/TankMovementComponent.h"
+#include "HamsterTank/HamsterTankGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -92,10 +94,10 @@ void AEnemyTower::BeginPlay()
 {
 	Super::BeginPlay();
 
-	const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
-	if(GameInstance.IsValid())
+	
+	if(GetWorld())
 	{
-		ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
+		ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
 	}
 	
 	if(TowerType != ETowerType::Custom)
@@ -479,6 +481,11 @@ bool AEnemyTower::ShouldConstrainAimDirectionToRotationRange() const
 
 bool AEnemyTower::ShouldSkipUpdate()
 {
+	const TWeakObjectPtr<AHamsterTankGameState> HamsterTankGameState = Cast<AHamsterTankGameState>(UGameplayStatics::GetGameState(this));
+	if(HamsterTankGameState.IsValid() && HamsterTankGameState->HasMatchFinished())
+	{
+		return true;
+	}
 	return !IsValid(ProjectileOrigin) || !IsValid(Tower) || !IsValid(GetWorld()) || !IsAlive();
 }
 

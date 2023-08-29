@@ -3,8 +3,10 @@
 
 #include "Widget/OverlayButtonsWidget.h"
 
+#include "TankHamsterGameInstance.h"
 #include "Components/Button.h"
-#include "Widget/UISubsystem.h"
+#include "HamsterTank/HamsterTankGameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 
 bool UOverlayButtonsWidget::Initialize()
 {
@@ -49,24 +51,26 @@ void UOverlayButtonsWidget::ShowResumeButton(bool bShowResume) const
 
 void UOverlayButtonsWidget::OnResumePressed()
 {
-	if(UISubsystem.IsValid())
+	const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase = Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if(HamsterTankGameModeBase.IsValid())
 	{
-		UISubsystem->UnPauseGame();
+		HamsterTankGameModeBase->UnpauseMatch();
 	}
 }
 
 void UOverlayButtonsWidget::OnRestartPressed()
 {
-	if(UISubsystem.IsValid())
+	const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase = Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if(HamsterTankGameModeBase.IsValid())
 	{
-		UISubsystem->RestartLevel();
+		HamsterTankGameModeBase->RestartMatch();
 	}
 }
 
 void UOverlayButtonsWidget::OnHomePressed()
 {
-	if(UISubsystem.IsValid())
+	if(GameInstance.IsValid())
 	{
-		UISubsystem->BackToMainMenu();
+		GameInstance->OpenMainMenu();
 	}
 }

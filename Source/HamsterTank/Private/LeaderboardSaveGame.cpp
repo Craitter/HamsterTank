@@ -10,6 +10,4 @@ ULeaderboardSaveGame::ULeaderboardSaveGame()
 	SaveSlotName = DEFAULT_SAVE_SLOT;
 
 	UserIndex = 0;
-
-	MouseSensitivity = 1.0f;
 }

@@ -3,8 +3,10 @@
 
 #include "TankHamsterGameInstance.h"
 
+#include "LeaderboardSaveGame.h"
 #include "TankPlayerController.h"
 #include "Components/AudioComponent.h"
+#include "HamsterTank/HamsterTank.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundClass.h"
 #include "Sound/SoundMix.h"
@@ -27,6 +29,25 @@ UTankHamsterGameInstance::UTankHamsterGameInstance()
 	DefaultSoundClass = BPSoundClass.Object;
 }
 
+void UTankHamsterGameInstance::Init()
+{
+	Super::Init();
+	
+	if(UGameplayStatics::DoesSaveGameExist(DEFAULT_SAVE_SLOT, 0))
+	{
+		LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::LoadGameFromSlot(DEFAULT_SAVE_SLOT, 0));
+	}
+	else
+	{
+		LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::CreateSaveGameObject(ULeaderboardSaveGame::StaticClass()));
+		UGameplayStatics::SaveGameToSlot(LeaderboardSaveGame, DEFAULT_SAVE_SLOT, 0);
+	}
+	if(IsValid(LeaderboardSaveGame))
+	{
+		SliderValues = LeaderboardSaveGame->SliderValues;
+	}
+}
+
 void UTankHamsterGameInstance::StartGame()
 {
 	check(GetWorld())
@@ -46,11 +67,27 @@ void UTankHamsterGameInstance::OpenMainMenu()
 	GetWorld()->ServerTravel("/Game/Levels/MainMenuMap");
 }
 
+float UTankHamsterGameInstance::GetMouseSensivity()
+{
+	float* Mouse = SliderValues.Find(ESliderType::MouseSensitivity);
+	if(Mouse != nullptr)
+	{
+		return *Mouse;
+	}
+	return 1.0f;
+}
+
 void UTankHamsterGameInstance::SetSliderValue(const float NewValue, const ESliderType Slider)
 {
 	float& Value = SliderValues.FindOrAdd(Slider);
 	Value = NewValue;
 	HandleSliderChanged(NewValue, Slider);
+	LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::LoadGameFromSlot(DEFAULT_SAVE_SLOT, 0));
+	if(IsValid(LeaderboardSaveGame))
+	{
+		LeaderboardSaveGame->SliderValues = SliderValues;
+		UGameplayStatics::SaveGameToSlot(LeaderboardSaveGame, DEFAULT_SAVE_SLOT, 0);
+	}
 }
 
 float UTankHamsterGameInstance::GetSliderValue(const ESliderType Slider) 
@@ -97,21 +134,17 @@ void UTankHamsterGameInstance::MasterVolumeChanged(const float NewValue) const
 	UGameplayStatics::PushSoundMixModifier(this, DefaultMix);
 }
 
-
-bool UTankHamsterGameInstance::IsSoundMuted() const
+TWeakObjectPtr<ULeaderboardSaveGame> UTankHamsterGameInstance::GetCurrentSaveGame() const
 {
-	return bIsMuted;
+	return LeaderboardSaveGame;
 }
 
-void UTankHamsterGameInstance::PlayBackgroundMusic(TObjectPtr<USoundCue> InBackgroundMusic)
+void UTankHamsterGameInstance::PlayBackgroundMusic(TObjectPtr<USoundCue> InBackgroundMusic) const
 {
 	if(BackgroundMusic != nullptr && BackgroundMusic->Sound == InBackgroundMusic)
 	{
 		return;
-		
-	}
-	
-	
+	}	
 }
 
 void UTankHamsterGameInstance::ClearBackgroundMusic()
@@ -121,5 +154,45 @@ void UTankHamsterGameInstance::ClearBackgroundMusic()
 		BackgroundMusic->Deactivate();
 		BackgroundMusic->DestroyComponent();
 		BackgroundMusic = nullptr;
+	}
+}
+
+void UTankHamsterGameInstance::GetLeaderboardList(TArray<FLeaderboardEntry>& CurrentLeaderboard)
+{
+	LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::LoadGameFromSlot(DEFAULT_SAVE_SLOT, 0));
+	if(IsValid(LeaderboardSaveGame))
+	{
+		CurrentLeaderboard = LeaderboardSaveGame->Leaderboard;
+	}
+}
+
+void UTankHamsterGameInstance::AddNameToLeaderboardList(FString PlayerName, const float Points)
+{
+	LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::LoadGameFromSlot(DEFAULT_SAVE_SLOT, 0));
+	if(IsValid(LeaderboardSaveGame))
+	{
+		FLeaderboardEntry Entry;
+		Entry.Score = Points;
+		Entry.Name = PlayerName;
+		bool bIsNewName = true;
+		for (auto& [Rank, Name, Score] : LeaderboardSaveGame->Leaderboard)
+		{
+			if(Name.Equals(Entry.Name))
+			{
+				bIsNewName = false;
+				if(Entry.Score > Score)
+				{
+					Score = Entry.Score;
+				}
+				break;
+			}
+		}
+		if(bIsNewName)
+		{
+			LeaderboardSaveGame->Leaderboard.Add(Entry);
+		}
+		LeaderboardSaveGame->Leaderboard.Sort();
+		
+		UGameplayStatics::SaveGameToSlot(LeaderboardSaveGame, DEFAULT_SAVE_SLOT, 0);
 	}
 }

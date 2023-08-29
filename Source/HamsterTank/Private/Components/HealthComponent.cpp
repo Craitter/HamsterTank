@@ -40,9 +40,12 @@ void UHealthComponent::ReceiveFinalDamage(float FinalDamage)
 
 void UHealthComponent::ReceiveFinalDamage(float FinalDamage, TWeakObjectPtr<AController> Instigator)
 {
+	if(IsImmortal())
+	{
+		return;
+	}
 	CurrentHealth = FMath::Clamp(CurrentHealth - FinalDamage, 0, MaxHealth);
 	OnHeathChangedDelegateHandle.Broadcast(CurrentHealth);
-	UE_LOG(LogTemp, Warning , TEXT("NewHealth %f"), CurrentHealth);
 	if(!IsAlive())
 	{
 		if(IsValid(DeathSound))
@@ -50,7 +53,6 @@ void UHealthComponent::ReceiveFinalDamage(float FinalDamage, TWeakObjectPtr<ACon
 			UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetOwner()->GetActorLocation(), GetOwner()->GetActorRotation());
 		}
 		OnDeathDelegateHandle.Broadcast(Instigator);
-		UE_LOG(LogTemp, Warning , TEXT("Dead"));
 	}
 }
 

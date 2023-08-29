@@ -2,7 +2,12 @@
 
 
 #include "ObjectiveSubsystem.h"
-#include "Widget/UISubsystem.h"
+
+#include "Components/CherryObjectiveComponent.h"
+#include "Components/FireProjectileComponent.h"
+#include "Components/HealthComponent.h"
+#include "HamsterTank/HamsterTankGameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 
 
 
@@ -20,6 +25,23 @@ void FObjectiveScore::AddCherryDelta(int32 DeltaCherries)
 		Cherries = 0;
 	}
 	OnCherryCollectedDelegateHandle.Broadcast(Cherries);
+}
+
+void UObjectiveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+}
+
+void UObjectiveSubsystem::OnWorldBeginPlay(UWorld& InWorld)
+{
+	Super::OnWorldBeginPlay(InWorld);
+
+	const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase =
+		Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if(HamsterTankGameModeBase.IsValid())
+	{
+		HamsterTankGameModeBase->HandleMatchEndDelegate.AddDynamic(this, &ThisClass::GatherScore);
+	}
 }
 
 void UObjectiveSubsystem::RegisterPlayer(TWeakObjectPtr<AController> Player)
@@ -54,26 +76,36 @@ void UObjectiveSubsystem::TowerDestroyed(const TWeakObjectPtr<AController> Playe
 	OnTowerDestroyed.Broadcast();
 }
 
-void UObjectiveSubsystem::EndGame(const TWeakObjectPtr<AController> Player)
+void UObjectiveSubsystem::GatherScore()
 {
-	FObjectiveScore* Score = Players.Find(Player);
-
-	if(Score != nullptr)
+	for (auto& Player : Players)
 	{
-		if(OnGameEndDelegate.ExecuteIfBound(*Score))
+		if(Player.Key != nullptr)
 		{
-			const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
-			if(GameInstance.IsValid())
-			{
-				const TWeakObjectPtr<UUISubsystem> UISubsystem = GameInstance->GetSubsystem<UUISubsystem>();
-				if(UISubsystem.IsValid())
-				{
-					UISubsystem->OnGameWon.Broadcast();
-					return;
-				}
-			}
+			const TWeakObjectPtr<APawn> ControlledPawn = Player.Key->GetPawn();
+			GetScoreForPawn(ControlledPawn, &Player.Value);
 		}
 	}
+}
+
+void UObjectiveSubsystem::GetScoreForPawn(TWeakObjectPtr<APawn> Pawn, FObjectiveScore* Score)
+{
+	if(!Pawn.IsValid() || Score == nullptr)
+	{
+		return;
+	}
+	const TWeakObjectPtr<UHealthComponent> HealthComponent = Pawn->FindComponentByClass<UHealthComponent>();
+	const TWeakObjectPtr<UFireProjectileComponent> FireProjectileComponent = Pawn->FindComponentByClass<UFireProjectileComponent>();
+	const TWeakObjectPtr<UCherryObjectiveComponent> CherryObjectiveComponent = Pawn->FindComponentByClass<UCherryObjectiveComponent>();
+	
+	if(!HealthComponent.IsValid() || !FireProjectileComponent.IsValid() || !CherryObjectiveComponent.IsValid())
+	{
+		return;
+	}
+	
+	Score->SetHealth(HealthComponent->GetCurrentHealth());
+	Score->SetCherries(CherryObjectiveComponent->GetCurrentCherries());
+	Score->SetAmmo(FireProjectileComponent->GetCurrentAmmo());
 }
 
 TMulticastDelegate<void(float)>* UObjectiveSubsystem::GetOnScoreChangedDelegate(

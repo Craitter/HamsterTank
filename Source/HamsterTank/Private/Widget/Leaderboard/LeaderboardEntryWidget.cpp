@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Widget/LeaderboardEntryWidget.h"
+
+#include "Widget/Leaderboard/LeaderboardEntryWidget.h"
 
 #include "LeaderboardSaveGame.h"
 #include "Components/TextBlock.h"

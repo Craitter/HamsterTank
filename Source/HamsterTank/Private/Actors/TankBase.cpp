@@ -154,6 +154,11 @@ void ATankBase::Tick(float DeltaTime)
 	
 }
 
+void ATankBase::ClearVelocity() const
+{
+	TankMovement->Velocity = FVector::ZeroVector;
+}
+
 
 // void ATankBase::RequestAimAtTarget(const FVector& TargetLocation)
 // {
@@ -183,10 +188,7 @@ void ATankBase::RequestFire()
 
 void ATankBase::OnActorDied(TWeakObjectPtr<AController> DamageInstigator)
 {
-	if(IsValid(TankMovement))
-	{
-		TankMovement->Velocity = FVector::ZeroVector;
-	}
+	ClearVelocity();
 	if(IsValid(EngineSound))
 	{
 		EngineSound->Deactivate();
@@ -347,17 +349,6 @@ FVector ATankBase::GetLastHitDirection() const
 		return HandleDamageComponent->GetLastHitDirection();
 	}
 	return FVector::ZeroVector;
-}
-
-void ATankBase::GetScore(FObjectiveScore& Score) const
-{
-	if(!IsValid(HealthComponent) || !IsValid(FireProjectileComponent) || !IsValid(CherryObjectiveComponent))
-	{
-		return;
-	}
-	Score.SetHealth(HealthComponent->GetCurrentHealth());
-	Score.SetCherries(CherryObjectiveComponent->GetCurrentCherries());
-	Score.SetAmmo(FireProjectileComponent->GetCurrentAmmo());
 }
 
 // FVector ATankBase::GetDesiredTargetRotation() const

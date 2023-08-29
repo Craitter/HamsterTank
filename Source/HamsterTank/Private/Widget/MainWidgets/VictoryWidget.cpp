@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Widget/VictoryWidget.h"
+
+#include "Widget/MainWidgets/VictoryWidget.h"
 
 #include "Widget/CalculatePointsWidget.h"
 
@@ -17,7 +18,7 @@ bool UVictoryWidget::Initialize()
 		BindToAnimationFinished(VictoryAnimation, Event);
 		
 	}
-
+	PlayAnimationForward(VictoryAnimation);
 	return true;
 }
 

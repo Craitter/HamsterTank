@@ -5,7 +5,6 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "LeaderboardSaveGame.h"
 #include "ObjectiveSubsystem.h"
 #include "TankHamsterGameInstance.h"
 #include "Blueprint/UserWidget.h"
@@ -13,10 +12,10 @@
 #include "Actors/TankBase.h"
 #include "Components/AudioComponent.h"
 #include "Components/HealthComponent.h"
-#include "HamsterTank/HamsterTank.h"
+#include "HamsterTank/HamsterTankGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
-#include "Widget/UISubsystem.h"
+#include "Widget/TankBaseWidget.h"
 
 
 ATankPlayerController::ATankPlayerController()
@@ -51,23 +50,17 @@ void ATankPlayerController::Tick(float DeltaSeconds)
 void ATankPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-
-	const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
-	if(GameInstance.IsValid())
+	
+	ActiveWidget = CreateWidget<UTankBaseWidget>(this, InstructionsWidgetClass);
+	if(ActiveWidget.IsValid())
 	{
-		ObjectiveSubsystem = GameInstance->GetSubsystem<UObjectiveSubsystem>();
-		if(ObjectiveSubsystem.IsValid())
-		{
-			ObjectiveSubsystem->RegisterPlayer(this);
-			ObjectiveSubsystem->OnGameEndDelegate.BindUObject(this, &ThisClass::OnGameIsEnding);
-		}
-		UISubsystem = GameInstance->GetSubsystem<UUISubsystem>();
-		if(UISubsystem.IsValid())
-		{
-			UISubsystem->UnPauseGameDelegate.AddUObject(this, &ThisClass::RequestUnPauseCallback);
-			UISubsystem->RestartLevelDelegate.AddUObject(this, &ThisClass::RestartLevel);
-			const TWeakObjectPtr<UUserWidget> Widget = UISubsystem->OpenWidget(GameOverlayClass);
-		}
+		
+		ActiveWidget->AddToViewport();
+		FInputModeUIOnly Mode;
+		Mode.SetWidgetToFocus(ActiveWidget->TakeWidget());
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+		SetInputMode(Mode);
+		DisableInput(this);
 	}
 	
 	TankPawn = CastChecked<ATankBase>(InPawn);
@@ -79,12 +72,6 @@ void ATankPlayerController::OnPossess(APawn* InPawn)
 			PawnHealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnPlayerDied);
 		}
 	}
-	DisableInput(this);
-	TWeakObjectPtr<UTankHamsterGameInstance> TankHamsterGame = Cast<UTankHamsterGameInstance>(GetGameInstance());
-	if(TankHamsterGame.IsValid())
-	{
-		TankHamsterGame->PlayBackgroundMusic(BackgroundMusic);
-	}
 }
 	
 
@@ -92,7 +79,6 @@ void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
-
 	const TWeakObjectPtr<ULocalPlayer> LocalPlayer = GetLocalPlayer();
 	if(!ensure(LocalPlayer.IsValid())) return;
 	const TWeakObjectPtr<UEnhancedInputLocalPlayerSubsystem> EnhancedInputLocalPlayerSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
@@ -105,15 +91,31 @@ void ATankPlayerController::BeginPlay()
 	{
 		EnhancedInputLocalPlayerSubsystem->AddMappingContext(IMC_MK_Default.LoadSynchronous(), 0);
 	}
-
-	TWeakObjectPtr<ULeaderboardSaveGame> LeaderboardSaveGame = {nullptr};
-	if(UGameplayStatics::DoesSaveGameExist(DEFAULT_SAVE_SLOT, 0))
+	
+	const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase = Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if(HamsterTankGameModeBase.IsValid())
 	{
-		LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::LoadGameFromSlot(DEFAULT_SAVE_SLOT, 0));
+		HamsterTankGameModeBase->HandleMatchEndDelegate.AddDynamic(this, &ThisClass::OnMatchIsEnding);
+		HamsterTankGameModeBase->HandleMatchRestartDelegate.AddDynamic(this, &ThisClass::OnMatchRestart);
+		HamsterTankGameModeBase->HandleMatchUnPauseDelegate.AddDynamic(this, &ThisClass::OnUnpauseMatch);
+		HamsterTankGameModeBase->HandleMatchPauseDelegate.AddDynamic(this, &ThisClass::OnPauseMatch);
+		HamsterTankGameModeBase->HandleMatchStartDelegate.AddDynamic(this, &ThisClass::OnMatchStart);
 	}
-	if(LeaderboardSaveGame.IsValid())
+
+	const TWeakObjectPtr<UTankHamsterGameInstance> TankHamsterGame = Cast<UTankHamsterGameInstance>(GetGameInstance());
+	if(TankHamsterGame.IsValid())
 	{
-		SavedMouseSensitivy = LeaderboardSaveGame->MouseSensitivity;
+		TankHamsterGame->PlayBackgroundMusic(BackgroundMusic);
+	}
+
+	const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
+	if(GameInstance.IsValid())
+	{
+		ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
+		if(ObjectiveSubsystem.IsValid())
+		{
+			ObjectiveSubsystem->RegisterPlayer(this);
+		}
 	}
 }
 
@@ -147,9 +149,7 @@ void ATankPlayerController::SetupInputComponent()
 	DriveStopDelegateHandle = EnhancedInputComponent->BindAction(IA_Drive, ETriggerEvent::Completed, this, &ATankPlayerController::RequestDriveCallback).GetHandle();
 	FireDelegateHandle = EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &ATankPlayerController::RequestFireCallback).GetHandle();
 	AimDelegateHandle = EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Triggered, this, &ATankPlayerController::RequestAimCallback).GetHandle();
-	PauseDelegateHandle = EnhancedInputComponent->BindAction(IA_Pause, ETriggerEvent::Triggered, this, &ATankPlayerController::RequestPauseCallback).GetHandle();
-
-	
+	PauseDelegateHandle = EnhancedInputComponent->BindAction(IA_Pause, ETriggerEvent::Triggered, this, &ATankPlayerController::RequestPauseCallback).GetHandle();	
 }
 
 void ATankPlayerController::OnObjectiveTowerDestroyed()
@@ -157,17 +157,89 @@ void ATankPlayerController::OnObjectiveTowerDestroyed()
 	
 }
 
-void ATankPlayerController::OnGameIsEnding(FObjectiveScore& Score)
+void ATankPlayerController::OnMatchIsEnding()
 {
+	RemoveActiveWidget();
+
+	ActiveWidget = CreateWidget<UTankBaseWidget>(this, VictoryWidgetClass);
+	if(ActiveWidget.IsValid())
+	{
+		ActiveWidget->AddToViewport();
+		FInputModeUIOnly Mode;
+		Mode.SetWidgetToFocus(ActiveWidget->TakeWidget());
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+		SetInputMode(Mode);
+	}
+	
+	DisableInput(this);
 	if(PlayingBackgroundMusic.IsValid())
 	{
 		PlayingBackgroundMusic->Stop();
 	}
+	UGameplayStatics::PlaySound2D(this, VictorySound);
 	if(TankPawn.IsValid())
 	{
-		TankPawn->GetScore(Score);
+		TankPawn->ClearVelocity();
+	}
+	SetShowMouseCursor(true);
+	
+}
+
+void ATankPlayerController::RemoveActiveWidget() const
+{
+	if(ActiveWidget.IsValid())
+	{
+		ActiveWidget->RemoveFromParent();
 	}
 }
+
+void ATankPlayerController::OnPauseMatch()
+{
+	SetPause(true);
+	SetShowMouseCursor(true);
+
+	RemoveActiveWidget();
+	ActiveWidget = CreateWidget<UTankBaseWidget>(this, PauseWidgetClass);
+	if(ActiveWidget.IsValid())
+	{
+		ActiveWidget->AddToViewport();
+		FInputModeUIOnly Mode;
+		Mode.SetWidgetToFocus(ActiveWidget->TakeWidget());
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+		SetInputMode(Mode);
+	}
+}
+
+void ATankPlayerController::OpenGameOverlay()
+{
+	RemoveActiveWidget();
+	ActiveWidget = CreateWidget<UTankBaseWidget>(this, GameOverlayWidgetClass);
+	if(ActiveWidget.IsValid())
+	{
+		ActiveWidget->AddToViewport();
+	}
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
+	EnableInput(this);
+}
+
+void ATankPlayerController::OnUnpauseMatch()
+{
+	SetPause(false);
+	OpenGameOverlay();
+}
+
+void ATankPlayerController::OnMatchRestart()
+{
+	RestartLevel();
+}
+
+void ATankPlayerController::OnMatchStart()
+{
+	
+	OpenGameOverlay();
+}
+
 
 void ATankPlayerController::SetMouseSensitivity(float NewValue)
 {
@@ -175,7 +247,6 @@ void ATankPlayerController::SetMouseSensitivity(float NewValue)
 	{
 		return;
 	}
-	SavedMouseSensitivy = NewValue;
 	const TWeakObjectPtr<ULocalPlayer> LocalPlayer = GetLocalPlayer();
 	if(!ensure(LocalPlayer.IsValid())) return;
 	const TWeakObjectPtr<UEnhancedInputLocalPlayerSubsystem> EnhancedInputLocalPlayerSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
@@ -199,7 +270,6 @@ void ATankPlayerController::SetMouseSensitivity(float NewValue)
 						if(Scalar != nullptr)
 						{
 							Scalar->Scalar = FVector(MouseSensityTranslation.GetRichCurveConst()->Eval(NewValue), 1.0f, 1.0f);
-							UE_LOG(LogTemp, Warning , TEXT("CALLED"));
 							break;
 						}
 					}
@@ -207,28 +277,15 @@ void ATankPlayerController::SetMouseSensitivity(float NewValue)
 			}
 		}
 	}
-	TWeakObjectPtr<ULeaderboardSaveGame> LeaderboardSaveGame = {nullptr};
-	if(UGameplayStatics::DoesSaveGameExist(DEFAULT_SAVE_SLOT, 0))
-	{
-		LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::LoadGameFromSlot(DEFAULT_SAVE_SLOT, 0));
-	}
-	else
-	{
-		LeaderboardSaveGame = Cast<ULeaderboardSaveGame>(UGameplayStatics::CreateSaveGameObject(ULeaderboardSaveGame::StaticClass()));
-		
-	}
-	if(LeaderboardSaveGame.IsValid())
-	{
-		LeaderboardSaveGame->MouseSensitivity = NewValue;
-	}
-	UGameplayStatics::AsyncSaveGameToSlot(LeaderboardSaveGame.Get(), DEFAULT_SAVE_SLOT, 0);
 }
 
-
-
-void ATankPlayerController::LoadMouseSensitivy()
+void ATankPlayerController::LoadMouseSensitivity()
 {
-	SetMouseSensitivity(SavedMouseSensitivy);
+	const TWeakObjectPtr<UTankHamsterGameInstance> GameInstance = Cast<UTankHamsterGameInstance>(GetGameInstance());
+	if(GameInstance.IsValid())
+	{
+		SetMouseSensitivity(GameInstance->GetMouseSensivity());
+	}
 }
 
 void ATankPlayerController::RequestDriveCallback(const FInputActionValue& Value)
@@ -280,28 +337,11 @@ void ATankPlayerController::RequestAimCallback(const FInputActionValue& Value)
 
 void ATankPlayerController::RequestPauseCallback()
 {
-	if(!UISubsystem.IsValid())
+	const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase = Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if(HamsterTankGameModeBase.IsValid())
 	{
-		return;
+		HamsterTankGameModeBase->PauseMatch();
 	}
-	const TWeakObjectPtr<UUserWidget> WidgetToFocus = UISubsystem->PauseGame();
-	if(WidgetToFocus == nullptr)
-	{
-		return;
-	}
-	SetPause(true);
-	SetShowMouseCursor(true);
-	FInputModeUIOnly Mode;
-	Mode.SetWidgetToFocus(WidgetToFocus->TakeWidget());
-	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
-	SetInputMode(Mode);
-}
-
-void ATankPlayerController::RequestUnPauseCallback()
-{
-	SetPause(false);
-	SetShowMouseCursor(false);
-	SetInputMode(FInputModeGameOnly());
 }
 
 void ATankPlayerController::OnPlayerDied(TWeakObjectPtr<AController> DamageInstigator)
@@ -310,10 +350,18 @@ void ATankPlayerController::OnPlayerDied(TWeakObjectPtr<AController> DamageInsti
 	{
 		PlayingBackgroundMusic->Stop();
 	}
+	UGameplayStatics::PlaySound2D(this, DefeatSound);
 	DisableInput(this);
-	if(UISubsystem.IsValid())
+
+	RemoveActiveWidget();
+	ActiveWidget = CreateWidget<UTankBaseWidget>(this, DefeatWidgetClass);
+	if(ActiveWidget.IsValid())
 	{
-		UISubsystem->NotifyPlayerDead();
+		ActiveWidget->AddToViewport();
+		FInputModeUIOnly Mode;
+		Mode.SetWidgetToFocus(ActiveWidget->TakeWidget());
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+		SetInputMode(Mode);
 	}
 	//todo restart/open menu
 }

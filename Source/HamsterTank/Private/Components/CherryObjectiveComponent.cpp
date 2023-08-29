@@ -23,7 +23,7 @@ void UCherryObjectiveComponent::BeginPlay()
 
 	if(GetOwner() && GetOwner()->GetGameInstance())
 	{
-		ObjectiveSubsystem = GetOwner()->GetGameInstance()->GetSubsystem<UObjectiveSubsystem>();
+		ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
 	}
 }
 

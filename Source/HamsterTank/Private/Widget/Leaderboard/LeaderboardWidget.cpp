@@ -1,12 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Widget/LeaderboardWidget.h"
+
+#include "Widget/Leaderboard/LeaderboardWidget.h"
 
 #include "LeaderboardSaveGame.h"
+#include "TankHamsterGameInstance.h"
 #include "Components/ScrollBox.h"
-#include "Widget/LeaderboardEntryWidget.h"
-#include "Widget/UISubsystem.h"
+#include "Widget/Leaderboard/LeaderboardEntryWidget.h"
 
 void ULeaderboardWidget::NativePreConstruct()
 {
@@ -17,13 +18,13 @@ void ULeaderboardWidget::NativePreConstruct()
 
 void ULeaderboardWidget::Refresh()
 {
-	if(Leaderboard == nullptr || LeaderboardEntryClass == nullptr || !UISubsystem.IsValid())
+	if(Leaderboard == nullptr || LeaderboardEntryClass == nullptr || !GameInstance.IsValid())
 	{
 		return;
 	}
 	Leaderboard->ClearChildren();
 	TArray<FLeaderboardEntry> SaveGameLeaderboardEntries;
-	UISubsystem->GetLeaderboardList(SaveGameLeaderboardEntries);
+	GameInstance->GetLeaderboardList(SaveGameLeaderboardEntries);
 	int32 Rank = 1;
 	for(int32 i = SaveGameLeaderboardEntries.Num() -1; i >= 0; i--)
 	{
@@ -33,7 +34,6 @@ void ULeaderboardWidget::Refresh()
 		TWeakObjectPtr<ULeaderboardEntryWidget> Entry = CreateWidget<ULeaderboardEntryWidget>(this, LeaderboardEntryClass);
 		if(Entry.IsValid())
 		{
-			UE_LOG(LogTemp, Warning , TEXT("AddingEntry"));
 			Entry->SetValues(SaveGameLeaderboardEntries[i]);
 		}
 		Leaderboard->AddChild(Entry.Get());

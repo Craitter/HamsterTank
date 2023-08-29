@@ -39,7 +39,8 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	
+
+	void ClearVelocity() const;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -157,6 +158,4 @@ public: //simple Getter Functions
 	UFUNCTION(BlueprintCallable, Category = "Tank|Damage")
 	FVector GetLastHitDirection() const;
 	// FVector GetDesiredTargetRotation() const;
-
-	void GetScore(FObjectiveScore& Score) const;
 };

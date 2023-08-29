@@ -7,6 +7,7 @@
 #include "InputMappingContext.h"
 #include "TankPlayerController.generated.h"
 
+class UPauseMenuWidget;
 class USoundCue;
 struct FObjectiveScore;
 class UTankBaseWidget;
@@ -35,14 +36,24 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	void OnObjectiveTowerDestroyed();
+	void RemoveActiveWidget() const;
 
-	void OnGameIsEnding(FObjectiveScore& Score);
+	void OpenGameOverlay();
+	
+	UFUNCTION()
+	void OnMatchIsEnding();
+	UFUNCTION()
+	void OnPauseMatch();
+	UFUNCTION()
+	void OnUnpauseMatch();
+	UFUNCTION()
+	void OnMatchRestart();
+	UFUNCTION()
+	void OnMatchStart();
 
 	void SetMouseSensitivity(float NewValue);
-
-	void LoadMouseSensitivy();
-
-	float GetMouseSens(){return SavedMouseSensitivy;}
+	void LoadMouseSensitivity();
+	
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
@@ -56,6 +67,12 @@ protected:
 	TObjectPtr<USoundCue> BackgroundMusic = {nullptr};
 
 	TWeakObjectPtr<UAudioComponent> PlayingBackgroundMusic = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> DefeatSound = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> VictorySound = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_Drive = {nullptr};
@@ -77,9 +94,24 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> IMC_MK_Default = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UTankBaseWidget> InstructionsWidgetClass = {nullptr};
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UTankBaseWidget> GameOverlayClass = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UTankBaseWidget> VictoryWidgetClass = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UTankBaseWidget> DefeatWidgetClass = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UTankBaseWidget> PauseWidgetClass = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UTankBaseWidget> GameOverlayWidgetClass = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly)
 	FRuntimeFloatCurve MouseSensityTranslation;
@@ -91,12 +123,11 @@ private:
 	void RequestAimCallback(const FInputActionValue& Value);
 
 	void RequestPauseCallback();
-	void RequestUnPauseCallback();
 	
 	void OnPlayerDied(TWeakObjectPtr<AController> DamageInstigator);
 	
-
-	TWeakObjectPtr<UGameOverlayWidget> GameOverlayWidget = {nullptr};
+	
+	TWeakObjectPtr<UTankBaseWidget> ActiveWidget = {nullptr};
 	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
 	TWeakObjectPtr<ATankBase> TankPawn = {nullptr};
 	TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem ={nullptr};
@@ -110,7 +141,6 @@ private:
 
 
 	TWeakObjectPtr<UInputModifierScalar> MouseScalar = {nullptr};
-	float SavedMouseSensitivy = 1.0f;
 };
 
 

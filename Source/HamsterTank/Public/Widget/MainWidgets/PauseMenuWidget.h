@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "Widget/TankBaseWidget.h"
 #include "PauseMenuWidget.generated.h"
 
 class UGenericSliderWidget;
@@ -12,7 +12,7 @@ class UOverlayButtonsWidget;
  * 
  */
 UCLASS()
-class HAMSTERTANK_API UPauseMenuWidget : public UUserWidget
+class HAMSTERTANK_API UPauseMenuWidget : public UTankBaseWidget
 {
 	GENERATED_BODY()
 
