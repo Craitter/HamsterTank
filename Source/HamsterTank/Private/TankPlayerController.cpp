@@ -236,7 +236,7 @@ void ATankPlayerController::OnMatchRestart()
 
 void ATankPlayerController::OnMatchStart()
 {
-	
+	LoadMouseSensitivity();
 	OpenGameOverlay();
 }
 
