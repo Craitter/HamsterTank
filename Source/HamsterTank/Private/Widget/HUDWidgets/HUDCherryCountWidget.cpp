@@ -10,18 +10,19 @@ bool UHUDCherryCountWidget::Initialize()
 {
 	if(!Super::Initialize()) return false;
 
-	const TWeakObjectPtr<UGameInstance> GameInstance = GetGameInstance();
-	if(!ensure(GameInstance.IsValid())) return false;
-	const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
-	if(!ensure(ObjectiveSubsystem.IsValid())) return false;
-	
-	FObjectiveScore* Score = ObjectiveSubsystem->GetScore(GetOwningPlayer());
-	if(Score != nullptr)
+	if(GetWorld())
 	{
-		Score->OnCherryCollectedDelegateHandle.AddUObject(this, &ThisClass::OnCherryCountChanged);
-		OnCherryCountChanged(Score->GetCherries());
+		const TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
+		if(ObjectiveSubsystem.IsValid())
+		{
+			FObjectiveScore* Score = ObjectiveSubsystem->GetScore(GetOwningPlayer());
+			if(Score != nullptr)
+			{
+				Score->OnCherryCollectedDelegateHandle.AddUObject(this, &ThisClass::OnCherryCountChanged);
+				OnCherryCountChanged(Score->GetCherries());
+			}
+		}
 	}
-
 	return true;
 }
 

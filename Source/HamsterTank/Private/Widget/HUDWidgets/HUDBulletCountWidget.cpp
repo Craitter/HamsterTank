@@ -12,13 +12,15 @@ bool UHUDBulletCountWidget::Initialize()
 	if(!Super::Initialize()) return false;
 	
 	const TWeakObjectPtr<APawn> OwningPawn = GetOwningPlayerPawn();
-	if(!ensure(OwningPawn != nullptr)) return false;
-	const TWeakObjectPtr<UFireProjectileComponent> FireProjectileComponent = OwningPawn->FindComponentByClass<UFireProjectileComponent>();
-	if(!ensure(FireProjectileComponent != nullptr)) return false;
-	
-	FireProjectileComponent->OnAmmoChanged.AddUObject(this, &ThisClass::OnAmmoChanged);
-	OnAmmoChanged(FireProjectileComponent->GetCurrentAmmo());
-	
+	if(OwningPawn.IsValid())
+	{
+		const TWeakObjectPtr<UFireProjectileComponent> FireProjectileComponent = OwningPawn->FindComponentByClass<UFireProjectileComponent>();
+		if(FireProjectileComponent.IsValid())
+		{
+			FireProjectileComponent->OnAmmoChanged.AddUObject(this, &ThisClass::OnAmmoChanged);
+			OnAmmoChanged(FireProjectileComponent->GetCurrentAmmo());
+		}
+	}	
 	return true;
 }
 
