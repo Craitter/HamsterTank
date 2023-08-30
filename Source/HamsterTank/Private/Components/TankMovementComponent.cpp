@@ -190,6 +190,7 @@ bool UTankMovementComponent::ShouldSkipUpdate(float DeltaTime) const
 FVector UTankMovementComponent::PredictLocationAfterSeconds(const float Seconds,
                                                             bool bPredictRotation) const
 {
+	//todo do this
 	if(!IsValid(UpdatedComponent) || !IsValid(PawnOwner))
 	{
 		UE_LOG(LogTemp, Warning , TEXT("Updated Component is Zero"));

@@ -307,8 +307,6 @@ void AEnemyTower::OnPlayerFound(const TWeakObjectPtr<APawn> InPlayerPawn)
 
 void AEnemyTower::LookForPlayer()
 {
-	
-
 	const TWeakObjectPtr<APawn> PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if(PlayerPawn.IsValid() && GetDistanceToSelf2D(PlayerPawn->GetActorLocation()) > GetMaxRange())
 	{
@@ -317,28 +315,11 @@ void AEnemyTower::LookForPlayer()
 	TRACE_CPUPROFILER_EVENT_SCOPE(EnemyTower::LookForPlayer);
 	const TWeakObjectPtr<UWorld> World = GetWorld();
 	check(World.Get())
-
-	TArray<FHitResult> Results;
-	
-	const FCollisionShape CollisionShape = FCollisionShape::MakeSphere(GetMaxRange());
-
-	FCollisionQueryParams QueryParams;
-	QueryParams.bTraceComplex = false;
-	QueryParams.MobilityType = EQueryMobilityType::Dynamic;
-	QueryParams.bReturnPhysicalMaterial = false;
-	QueryParams.bIgnoreBlocks = bIgnoreBlocksWhenLookForPlayer;
-	QueryParams.AddIgnoredActor(this);
-	
-	World->SweepMultiByProfile(Results, InternOriginLocation, InternOriginLocation, FQuat::Identity, LookForPlayerCollisionProfileName.Name, CollisionShape, QueryParams);
-
-	for (const FHitResult& Result : Results)
+	//If Multiplayer revisit
+	if(IsTargetAlive(PlayerPawn) && IsLocationInFieldOfView(PlayerPawn->GetActorLocation()) && CanTargetLocation(PlayerPawn->GetActorLocation(), PlayerPawn))
 	{
-		const TWeakObjectPtr<APawn> HitPawn = Cast<APawn>(Result.GetActor());
-		if(IsTargetAlive(HitPawn) && IsLocationInFieldOfView(HitPawn->GetActorLocation()) && CanTargetLocation(HitPawn->GetActorLocation(), HitPawn))
-		{
-			OnPlayerFoundDelegateHandle.Execute(HitPawn);
-			return;
-		}
+		OnPlayerFoundDelegateHandle.Execute(PlayerPawn);
+		return;
 	}
 	TargetPawn = nullptr;
 }
@@ -376,11 +357,7 @@ bool AEnemyTower::VerifyTargetValid() const
 {
 	if(IsTargetAlive() && IsLocationInRange(TargetPawn->GetActorLocation()) && CanTargetLocation(TargetPawn->GetActorLocation(), TargetPawn))
 	{
-		if(ShouldVerifyFieldOfView() && !IsLocationInFieldOfView(TargetPawn->GetActorLocation()))
-		{
-			return false;
-		}
-		return true;
+		return !ShouldVerifyFieldOfView() || IsLocationInFieldOfView(TargetPawn->GetActorLocation());
 	}
 	else
 	{
@@ -455,6 +432,7 @@ bool AEnemyTower::IsDirectionInFOV(const FVector& Direction) const
 	{
 		return false;
 	}
+	//Todo: Make Radians to improve performance
 	const float DegreeDistance = FMath::RadiansToDegrees(acos(Tower->GetForwardVector().Dot(Direction)));
 	return DegreeDistance < GetFOV()/2;
 }
@@ -514,10 +492,10 @@ void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float
 		const float Alpha = FMath::Clamp<float>(CurrentTurningTime / TurningTime, 0.0f, 1.0f);
 		Tower->SetWorldRotation(FMath::InterpSinInOut(SinStartRotation, SinEndRotation, Alpha));
 	
-		if(Alpha + UE_FLOAT_NORMAL_THRESH > 1.0f && OnSinRotationFinishedDelegateHandle.IsBound())
+		if(Alpha + UE_FLOAT_NORMAL_THRESH > 1.0f)
 		{
 			CurrentTurningTime = 0.0f;
-			OnSinRotationFinishedDelegateHandle.Execute();
+			OnSinRotationFinishedDelegateHandle.ExecuteIfBound();
 		}
 	}
 }
