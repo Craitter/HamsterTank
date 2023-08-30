@@ -19,10 +19,4 @@ void AHamsterTankGameState::FinishMatch()
 void AHamsterTankGameState::BeginPlay()
 {
 	Super::BeginPlay();
-
-	const TWeakObjectPtr<AHamsterTankGameModeBase> HamsterTankGameModeBase = Cast<AHamsterTankGameModeBase>(UGameplayStatics::GetGameMode(this));
-	if(HamsterTankGameModeBase.IsValid())
-	{
-		HamsterTankGameModeBase->HandleMatchEndDelegate.AddDynamic(this, &ThisClass::FinishMatch);
-	}
 }

@@ -7,7 +7,7 @@
 #include "Interface/CollectPickupInterface.h"
 #include "CherryObjectiveComponent.generated.h"
 
-class UObjectiveSubsystem;
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCherryCountChangedDelegate, float)
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -26,11 +26,6 @@ protected:
 	TWeakObjectPtr<AController> GetOwningController() const;
 	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup) override;
 public:
-	
 
-	
-	float GetCurrentCherries() const;
 private:
-	
-	TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = {nullptr};
 };

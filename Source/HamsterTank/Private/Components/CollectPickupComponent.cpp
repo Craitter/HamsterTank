@@ -5,8 +5,6 @@
 
 #include "Actors/PickupActor.h"
 #include "Components/Interface/CollectPickupInterface.h"
-#include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
 
 // Sets default values for this component's properties
 UCollectPickupComponent::UCollectPickupComponent()

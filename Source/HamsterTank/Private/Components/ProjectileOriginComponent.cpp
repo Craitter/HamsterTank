@@ -14,14 +14,7 @@ UProjectileOriginComponent::UProjectileOriginComponent()
 }
 
 
-// Called when the game starts
-void UProjectileOriginComponent::BeginPlay()
-{
-	Super::BeginPlay();
 
-	// ...
-	
-}
 
 
 

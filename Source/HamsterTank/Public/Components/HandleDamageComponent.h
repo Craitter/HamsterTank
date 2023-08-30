@@ -7,7 +7,6 @@
 #include "HandleDamageComponent.generated.h"
 
 
-enum EPickupType : uint8;
 class UHealthComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )

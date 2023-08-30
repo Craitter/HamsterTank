@@ -10,8 +10,6 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/CollectPickupComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
 
 class UCollectPickupComponent;
 // Sets default values
@@ -50,10 +48,10 @@ void APickupActor::SetCollected()
 		PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, CurrentPickupData.PickupNiagara, GetActorLocation());
 		PickupParticle->OnSystemFinished.AddDynamic(this, &ThisClass::OnNiagaraFinished);
 	}
-	if(IsValid(CurrentPickupData.PickupSound))
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, CurrentPickupData.PickupSound, GetActorLocation(), GetActorRotation());
-	}
+	// if(IsValid(CurrentPickupData.PickupSound))
+	// {
+	// 	UGameplayStatics::PlaySoundAtLocation(this, CurrentPickupData.PickupSound, GetActorLocation(), GetActorRotation());
+	// }
 }
 
 // Called when the game starts or when spawned

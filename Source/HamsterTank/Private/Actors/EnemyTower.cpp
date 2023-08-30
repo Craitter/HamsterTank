@@ -6,7 +6,6 @@
 
 
 #include "HamsterTankGameState.h"
-#include "ObjectiveSubsystem.h"
 #include "Actors/PickupActor.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/FireProjectileComponent.h"
@@ -14,7 +13,6 @@
 #include "Components/HealthComponent.h"
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/TankMovementComponent.h"
-#include "HamsterTank/HamsterTankGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -93,12 +91,7 @@ AEnemyTower::AEnemyTower()
 void AEnemyTower::BeginPlay()
 {
 	Super::BeginPlay();
-
 	
-	if(GetWorld())
-	{
-		ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
-	}
 	
 	if(TowerType != ETowerType::Custom)
 	{
@@ -233,10 +226,6 @@ bool AEnemyTower::IsAlive() const
 
 void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator)
 {
-	if(ObjectiveSubsystem.IsValid())
-	{
-		ObjectiveSubsystem->TowerDestroyed(DamageInstigator.Get());
-	}
 	if(IsValid(AnimSkeleton) && IsValid(Tower) && IsValid(Base) && IsValid(CapsuleCollider))
 	{
 		AnimSkeleton->SetComponentTickEnabled(true);
@@ -246,7 +235,7 @@ void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator)
 		AnimSkeleton->PlayAnimation(DeathAnimation, false);
 		CapsuleCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		FTimerHandle Handle;
-		GetWorldTimerManager().SetTimer(Handle, this, &ThisClass::OnAnimFinshed, 3.0f, false);
+		GetWorldTimerManager().SetTimer(Handle, this, &ThisClass::OnAnimFinished, 3.0f, false);
 		
 		FVector SpawnLocation = GetActorLocation();
 		SpawnLocation.Z -= CapsuleCollider->GetScaledCapsuleHalfHeight() - 20.0f;
@@ -254,7 +243,7 @@ void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator)
 	}
 }
 
-void AEnemyTower::OnAnimFinshed()
+void AEnemyTower::OnAnimFinished()
 {
 	if(IsValid(AnimSkeleton))
 	{

@@ -5,10 +5,7 @@
 
 #include "Actors/TankBase.h"
 
-#include "NiagaraComponent.h"
-#include "ObjectiveSubsystem.h"
 #include "Camera/CameraComponent.h"
-#include "Components/AudioComponent.h"
 #include "Components/CherryObjectiveComponent.h"
 #include "Components/FireProjectileComponent.h"
 #include "Components/HandleDamageComponent.h"
@@ -49,10 +46,6 @@ ATankBase::ATankBase()
 	if(!ensure(IsValid(CherryObjectiveComponent))) return;
 	CollectPickupComponent = CreateDefaultSubobject<UCollectPickupComponent>("CollectPickupComponent");
 	if(!ensure(IsValid(CollectPickupComponent))) return;
-	EngineSound = CreateDefaultSubobject<UAudioComponent>("EngineSoundComponent");
-	if(!ensure(IsValid(EngineSound))) return;
-	LaserPointerNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>("LaserPointerNiagaraComponent");
-	if(!ensure(IsValid(LaserPointerNiagaraComponent))) return;
 	
 	SetRootComponent(Sphere);
 	Body->SetupAttachment(Sphere);
@@ -67,7 +60,6 @@ ATankBase::ATankBase()
 	// Todo:Set more default values so we dont lose them when renaming for example
 	Camera->SetupAttachment(SpringArmComponent);
 	ProjectileOriginComponent->SetupAttachment(Head);
-	LaserPointerNiagaraComponent->SetupAttachment(ProjectileOriginComponent);
 
 	HandleDamageComponent->bModifyDamageOnRight = true;
 	HandleDamageComponent->MultiplierRightHit = 2.0f;
@@ -92,19 +84,10 @@ void ATankBase::BeginPlay()
 	{
 		HealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnActorDied);
 	}
-	if(IsValid(EngineSound))
-	{
-		EngineSound->Play();
-	}
 }
 
 void ATankBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if(IsValid(EngineSound))
-	{
-		EngineSound->Deactivate();
-	}
-	
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -132,26 +115,6 @@ void ATankBase::Tick(float DeltaTime)
 	{
 		Head->SetRelativeRotation(FRotator(Head->GetRelativeRotation().Pitch, SpringArmComponent->GetTargetRotation().Yaw, Head->GetRelativeRotation().Roll));
 	}
-	if(IsValid(EngineSound) && SpeedPitchMultiplierCurve.GetRichCurveConst() != nullptr)
-	{
-		EngineSound->SetPitchMultiplier(SpeedPitchMultiplierCurve.GetRichCurveConst()->Eval(GetCurrentSpeed()));
-	}
-	if(bEnableLaserPointer && IsValid(LaserPointerNiagaraComponent) && IsValid(ProjectileOriginComponent))
-	{
-		FVector BeamEndLocation = FVector::ZeroVector;
-		check(GetWorld())
-		FHitResult Result;
-
-		FVector StartLocation = ProjectileOriginComponent->GetComponentLocation();
-		FVector EndLocation = StartLocation + ProjectileOriginComponent->GetForwardVector() * LaserPointerMaxRange;
-
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(this);
-		GetWorld()->LineTraceSingleByChannel(Result, ProjectileOriginComponent->GetComponentLocation(), EndLocation, ECC_GameTraceChannel2, Params);
-		BeamEndLocation = Result.bBlockingHit ? Result.ImpactPoint : EndLocation;
-		LaserPointerNiagaraComponent->SetVectorParameter(TEXT("User.Beam End"), BeamEndLocation);
-	}
-	
 }
 
 void ATankBase::ClearVelocity() const
@@ -177,7 +140,6 @@ void ATankBase::RequestFire()
 		{
 			// Body->GetAnimInstance()->Montage_Play(FireMontage);
 		}
-		
 		// const FVector StartLocation = Head->GetComponentLocation();
 		// constexpr float Distance =  1000.0f;
 		// const FVector EndLocation = StartLocation + Head->GetForwardVector() * Distance;
@@ -189,19 +151,7 @@ void ATankBase::RequestFire()
 void ATankBase::OnActorDied(TWeakObjectPtr<AController> DamageInstigator)
 {
 	ClearVelocity();
-	if(IsValid(EngineSound))
-	{
-		EngineSound->Deactivate();
-	}
-	if(IsValid(LaserPointerNiagaraComponent) && bEnableLaserPointer)
-	{
-		LaserPointerNiagaraComponent->Deactivate();
-	}
 }
-
-
-
-
 TWeakObjectPtr<USphereComponent> ATankBase::GetSphere() const
 {
 	return Sphere;

@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ProjectileBase.generated.h"
 
-class USoundCue;
+
 class UNiagaraSystem;
 class UNiagaraComponent;
 class UTankProjectileMovementComponent;
@@ -51,13 +51,9 @@ protected:
 
 	virtual float ComputeDamage();
 
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<USoundCue> ProjectileExplosion = {nullptr};
 public:	
 
-	UPROPERTY()
-	TArray<AActor*> Overlaps;
+
 	
 	UFUNCTION()
 	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);

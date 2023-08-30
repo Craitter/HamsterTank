@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "EnemyTower.generated.h"
 
-class UObjectiveSubsystem;
+
 class UHandleDamageComponent;
 class UHealthComponent;
 class UCapsuleComponent;
@@ -198,7 +198,7 @@ public:
 
 	void OnDeath(TWeakObjectPtr<AController> DamageInstigator);
 
-	void OnAnimFinshed();
+	void OnAnimFinished();
 protected:
 
 	/**
@@ -334,5 +334,4 @@ private:
 	FVector InternOriginLocation = FVector::ZeroVector;
 	//Temp Intern Values
 
-	TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem = {nullptr};
 };

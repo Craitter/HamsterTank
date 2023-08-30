@@ -110,34 +110,30 @@ public:
 	FOnMaxAmmoChanged OnMaxAmmoChanged;
 
 protected:
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<USoundCue> FireProjectileSound = {nullptr};
 	
 	TWeakObjectPtr<USceneComponent> ProjectileOrigin = {nullptr};
 
 	UPROPERTY(EditAnywhere, Category = "FireProjectile|Origin")
 	bool bAutoFindProjectileOrigin;
 	
-	
 	UPROPERTY(EditDefaultsOnly, Category = "FireProjectile|Projectile")
 	TSubclassOf<AProjectileBase> BaseProjectile = {nullptr};
 	
+	UPROPERTY(EditAnywhere, Category = "FireProjectile|Ammo")
+	int32 MaxAmmo = 99.0f;
 
 	UPROPERTY(EditAnywhere, Category = "FireProjectile|Ammo")
-	int32 MaxAmmo;
+	int32 StartAmmo = 30.0f;
 
 	UPROPERTY(EditAnywhere, Category = "FireProjectile|Ammo")
-	int32 StartAmmo;
-
-	UPROPERTY(EditAnywhere, Category = "FireProjectile|Ammo")
-	bool bHasEndlessAmmo;
+	bool bHasEndlessAmmo = false;
 	
 
 	UPROPERTY(EditAnywhere, Category = "FireProjectile|Data")
 	FFireProjectileData DefaultFireProjectileData;
 	
 private:
-	int32 CurrentAmmo;
+	int32 CurrentAmmo = 0.0f;
 
 	FTimerHandle FireCooldownTimerHandle;
 	

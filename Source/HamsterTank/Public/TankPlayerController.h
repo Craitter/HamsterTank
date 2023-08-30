@@ -36,23 +36,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	void OnObjectiveTowerDestroyed();
-	void RemoveActiveWidget() const;
 
-	void OpenGameOverlay();
-	
-	UFUNCTION()
-	void OnMatchIsEnding();
-	UFUNCTION()
-	void OnPauseMatch();
-	UFUNCTION()
-	void OnUnpauseMatch();
-	UFUNCTION()
-	void OnMatchRestart();
-	UFUNCTION()
-	void OnMatchStart();
-
-	void SetMouseSensitivity(float NewValue);
-	void LoadMouseSensitivity();
 	
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
@@ -62,17 +46,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	virtual void SetupInputComponent() override;
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<USoundCue> BackgroundMusic = {nullptr};
-
-	TWeakObjectPtr<UAudioComponent> PlayingBackgroundMusic = {nullptr};
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<USoundCue> DefeatSound = {nullptr};
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<USoundCue> VictorySound = {nullptr};
+	
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_Drive = {nullptr};
@@ -94,27 +68,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> IMC_MK_Default = {nullptr};
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UTankBaseWidget> InstructionsWidgetClass = {nullptr};
 	
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UTankBaseWidget> GameOverlayClass = {nullptr};
 
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UTankBaseWidget> VictoryWidgetClass = {nullptr};
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UTankBaseWidget> DefeatWidgetClass = {nullptr};
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UTankBaseWidget> PauseWidgetClass = {nullptr};
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UTankBaseWidget> GameOverlayWidgetClass = {nullptr};
-
-	UPROPERTY(EditDefaultsOnly)
-	FRuntimeFloatCurve MouseSensityTranslation;
 private:
 	void RequestDriveCallback(const FInputActionValue& Value);
 
@@ -126,11 +81,8 @@ private:
 	
 	void OnPlayerDied(TWeakObjectPtr<AController> DamageInstigator);
 	
-	
-	TWeakObjectPtr<UTankBaseWidget> ActiveWidget = {nullptr};
 	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
 	TWeakObjectPtr<ATankBase> TankPawn = {nullptr};
-	TWeakObjectPtr<UObjectiveSubsystem> ObjectiveSubsystem ={nullptr};
 	TWeakObjectPtr<UUISubsystem> UISubsystem = {nullptr};
 	
 	uint32 DriveDelegateHandle = 0;
@@ -138,9 +90,7 @@ private:
 	uint32 FireDelegateHandle = 0;
 	uint32 AimDelegateHandle = 0;
 	uint32 PauseDelegateHandle = 0;
-
-
-	TWeakObjectPtr<UInputModifierScalar> MouseScalar = {nullptr};
+	
 };
 
 

@@ -13,6 +13,7 @@ UHealthComponent::UHealthComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
+	CurrentHealth = 6.0f;
 	// ...
 }
 
@@ -48,10 +49,6 @@ void UHealthComponent::ReceiveFinalDamage(float FinalDamage, TWeakObjectPtr<ACon
 	OnHeathChangedDelegateHandle.Broadcast(CurrentHealth);
 	if(!IsAlive())
 	{
-		if(IsValid(DeathSound))
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetOwner()->GetActorLocation(), GetOwner()->GetActorRotation());
-		}
 		OnDeathDelegateHandle.Broadcast(Instigator);
 	}
 }

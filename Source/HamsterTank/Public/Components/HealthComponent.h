@@ -7,11 +7,13 @@
 #include "Interface/CollectPickupInterface.h"
 #include "HealthComponent.generated.h"
 
-class USoundCue;
+
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnMaxHealthChangedDelegate, float /* NewMaxHealth */, float /* OldMaxHealth */,
                                        float /* CurrentHealth */)
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnHeathChangedDelegate, float /* NewHealth */)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDeathDelegate, TWeakObjectPtr<AController> /*Instigator*/)
+
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class HAMSTERTANK_API UHealthComponent : public UActorComponent, public ICollectPickupInterface
@@ -26,8 +28,6 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<USoundCue> DeathSound = {nullptr};
 public:
 	void Heal(float Amount);
 	void ReceiveFinalDamage(float FinalDamage);
@@ -49,7 +49,7 @@ public:
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "Health")
-	float MaxHealth = 2;
+	float MaxHealth = 2.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "Health")
 	bool bIsImmortal = false;

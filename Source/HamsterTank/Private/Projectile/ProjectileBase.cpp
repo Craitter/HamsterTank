@@ -10,9 +10,7 @@
 
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Projectile/TankProjectileMovementComponent.h"
-#include "Sound/SoundCue.h"
 
 
 // Sets default values
@@ -105,10 +103,6 @@ void AProjectileBase::OnProjectileHit(const FHitResult& Result)
 	if(IsValid(Result.GetActor()))
 	{
 		Result.GetActor()->TakeDamage(ComputeDamage(), PointDamageEvent, GetInstigatorController(), GetInstigator());
-	}
-	if(IsValid(ProjectileExplosion))
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, ProjectileExplosion, GetActorLocation(), GetActorRotation());
 	}
 	Destroy();
 }

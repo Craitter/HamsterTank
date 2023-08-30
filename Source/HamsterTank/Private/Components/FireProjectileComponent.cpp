@@ -45,11 +45,6 @@ AProjectileBase* UFireProjectileComponent::TryFireProjectile(APawn* InstigatorPa
 
 	//Spawning Projectile
 	const TWeakObjectPtr<AProjectileBase> NewProjectile = GetWorld()->SpawnActor<AProjectileBase>(BaseProjectile, ProjectileOrigin->GetComponentLocation(), SpawnRotation, SpawnParameters);
-
-	if(IsValid(FireProjectileSound))
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, FireProjectileSound, ProjectileOrigin->GetComponentLocation(), ProjectileOrigin->GetComponentRotation());
-	}
 	
 	if(FireData.bApplyCooldown)
 	{

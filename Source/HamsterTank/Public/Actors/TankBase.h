@@ -7,7 +7,6 @@
 #include "TankBase.generated.h"
 
 class UNiagaraComponent;
-struct FObjectiveScore;
 class UCherryObjectiveComponent;
 class UCollectPickupComponent;
 struct FPickupData;
@@ -84,24 +83,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UCherryObjectiveComponent> CherryObjectiveComponent = {nullptr};
-
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UNiagaraComponent> LaserPointerNiagaraComponent = {nullptr};
-
-	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<UAudioComponent> EngineSound = {nullptr};
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Fire")
 	TObjectPtr<UAnimMontage> FireMontage = {nullptr};
 
-	UPROPERTY(EditDefaultsOnly)
-	FRuntimeFloatCurve SpeedPitchMultiplierCurve;
-
-	UPROPERTY(EditDefaultsOnly)
-	float LaserPointerMaxRange = 9999.0f;
-
-	UPROPERTY(EditDefaultsOnly)
-	bool bEnableLaserPointer = true;
 public:	
 	// void RequestAimAtTarget(const FVector& TargetLocation);
 	void RequestFire();

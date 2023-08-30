@@ -7,11 +7,15 @@ UTankProjectileMovementComponent::UTankProjectileMovementComponent()
 {
 	bUpdateOnlyIfRendered = false;
 	bInitialVelocityInLocalSpace = true;
-	
-	Velocity = FVector(1.f,0.f,0.f);
-	
+
+	Velocity = FVector(1.f, 0.f, 0.f);
+
 	bWantsInitializeComponent = true;
 	bComponentShouldUpdatePhysicsVolume = false;
+
+	bRotationFollowsVelocity = true;
+	InitialSpeed = 1100.0f;
+	MaxSpeed = 0.0f;
 }
 
 

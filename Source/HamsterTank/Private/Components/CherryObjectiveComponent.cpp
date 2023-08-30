@@ -3,7 +3,6 @@
 
 #include "Components/CherryObjectiveComponent.h"
 
-#include "ObjectiveSubsystem.h"
 
 // Sets default values for this component's properties
 UCherryObjectiveComponent::UCherryObjectiveComponent()
@@ -20,11 +19,7 @@ UCherryObjectiveComponent::UCherryObjectiveComponent()
 void UCherryObjectiveComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if(GetOwner() && GetOwner()->GetGameInstance())
-	{
-		ObjectiveSubsystem = GetWorld()->GetSubsystem<UObjectiveSubsystem>();
-	}
+	
 }
 
 TWeakObjectPtr<AController> UCherryObjectiveComponent::GetOwningController() const
@@ -44,23 +39,7 @@ void UCherryObjectiveComponent::OnPickupCollected(const EPickupType& Type, const
 		return;
 	}
 	CollectedPickup->SetCollected();
-	if(ObjectiveSubsystem.IsValid())
-	{
-		ObjectiveSubsystem->CherryCollected(GetOwningController(), FMath::RoundToInt32(Amount));
-	}	
 }
 
-float UCherryObjectiveComponent::GetCurrentCherries() const
-{
-	if(!ObjectiveSubsystem.IsValid())
-	{
-		return 0;
-	}
-	const FObjectiveScore* Score = ObjectiveSubsystem->GetScore(GetOwningController());
-	if(Score == nullptr)
-	{
-		return 0;
-	}
-	return Score->GetCherries();
-}
+
 
