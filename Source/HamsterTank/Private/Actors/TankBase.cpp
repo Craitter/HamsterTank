@@ -14,6 +14,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/TankMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "HamsterTank/HamsterTank.h"
 
 
 // Sets default values
@@ -49,6 +50,7 @@ ATankBase::ATankBase()
 	
 	SetRootComponent(Sphere);
 	Body->SetupAttachment(Sphere);
+	Body->SetRelativeScale3D(FVector(DEFAULT_PAWN_SCALE));
 	Head->SetupAttachment(Body, TEXT("BoneTurret"));
 	Head->SetUsingAbsoluteRotation(true);
 	SpringArmComponent->SetupAttachment(Sphere);

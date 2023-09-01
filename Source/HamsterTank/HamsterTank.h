@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 
 #define DEFAULT_SAVE_SLOT							TEXT("DefaultSlot")
+#define DEFAULT_PAWN_SCALE							0.1428571428571429f
 
 #if WITH_GAMEPLAY_DEBUGGER
 #include "GameplayDebugger.h"

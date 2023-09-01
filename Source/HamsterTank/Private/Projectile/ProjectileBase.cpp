@@ -48,7 +48,7 @@ void AProjectileBase::BeginPlay()
 	{
 		ProjectileMovement->OnProjectileStop.AddDynamic(this, &ThisClass::OnProjectileHit);
 	}
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireEffect, GetActorLocation(), GetActorRotation(), FVector(1), true, true, ENCPoolMethod::None);
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireEffect, GetActorLocation(), GetActorRotation(), FVector(1.0f/7.0f), true, true, ENCPoolMethod::None);
 }
 
 float AProjectileBase::ComputeDamage()
@@ -88,7 +88,7 @@ void AProjectileBase::OnProjectileHit(const FHitResult& Result)
 
 	// TWeakObjectPtr<UNiagaraComponent> RuntimeHitEffect =
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, Location, HitEffectRotation,
-		FVector(1.0f), true, true, ENCPoolMethod::None);
+		FVector(1.0f/7.0f), true, true, ENCPoolMethod::None);
 	if(IsValid(PointLight))
 	{
 		PointLight->SetIntensity(0.0f);

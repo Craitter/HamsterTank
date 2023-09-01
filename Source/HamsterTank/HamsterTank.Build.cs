@@ -9,7 +9,7 @@ public class HamsterTank : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
 		PublicDependencyModuleNames.AddRange(new string[] 
-			{ "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayDebugger", "Niagara", "NiagaraCore", "UMG" });
+			{ "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayDebugger", "Niagara", "NiagaraCore", "UMG", "GameplayAbilities", "GameplayTags" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

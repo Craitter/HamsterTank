@@ -99,16 +99,19 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCapsuleComponent> CapsuleCollider = {nullptr};
-	
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USkeletalMeshComponent> Base = {nullptr};
 
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USkeletalMeshComponent> Tower = {nullptr};
+	TObjectPtr<UStaticMeshComponent> TowerBase = {nullptr};
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> TowerHead = {nullptr};
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USkeletalMeshComponent> AnimSkeleton = {nullptr};
 
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UStaticMesh> DeadMesh = {nullptr};
+	
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UFireProjectileComponent> FireProjectileComponent = {nullptr};
 
@@ -152,7 +155,7 @@ protected:
 	bool bIgnoreBlocksWhenLookForPlayer;
 	//The Radius we look for targets and the max distance we track targets
 	UPROPERTY(EditAnywhere, Category = "Tower|Targeting", meta = (ClampMin = "0", ClampMax = "10000", Units = "cm"))
-	float MaxRange = 3000.0f;
+	float MaxRange = 428.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "Tower|Targeting")
 	ETowerType TowerType = ETowerType::OnTarget;
@@ -334,4 +337,7 @@ private:
 	FVector InternOriginLocation = FVector::ZeroVector;
 	//Temp Intern Values
 
+	float FOVRadians = 0.0f;
+
+	float IdleRotationRangeRadians = 0.0f;
 };

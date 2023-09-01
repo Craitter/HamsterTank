@@ -13,6 +13,8 @@
 #include "Components/HealthComponent.h"
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/TankMovementComponent.h"
+#include "Engine/StaticMeshActor.h"
+#include "HamsterTank/HamsterTank.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -32,10 +34,10 @@ AEnemyTower::AEnemyTower()
 
 	CapsuleCollider = CreateDefaultSubobject<UCapsuleComponent>("CapsuleCollider");
 	if(!ensure(IsValid(CapsuleCollider))) return;
-	Base = CreateDefaultSubobject<USkeletalMeshComponent>("Base");
-	if(!ensure(IsValid(Base))) return;
-	Tower = CreateDefaultSubobject<USkeletalMeshComponent>("Tower");
-	if(!ensure(IsValid(Tower))) return;
+	TowerBase = CreateDefaultSubobject<UStaticMeshComponent>("Base");
+	if(!ensure(IsValid(TowerBase))) return;
+	TowerHead = CreateDefaultSubobject<UStaticMeshComponent>("Head");
+	if(!ensure(IsValid(TowerHead))) return;
 	FireProjectileComponent = CreateDefaultSubobject<UFireProjectileComponent>("FireProjectileComponent");
 	if(!ensure(IsValid(FireProjectileComponent))) return;
 	ProjectileOrigin = CreateDefaultSubobject<UProjectileOriginComponent>("ProjectileOrigin");
@@ -48,16 +50,15 @@ AEnemyTower::AEnemyTower()
 	if(!ensure(IsValid(AnimSkeleton))) return;
 	
 	SetRootComponent(CapsuleCollider);
-	Base->SetupAttachment(CapsuleCollider);
-	Base->PrimaryComponentTick.bCanEverTick = false;
-	Tower->SetupAttachment(Base);
-	Tower->PrimaryComponentTick.bCanEverTick = false;
-	ProjectileOrigin->SetupAttachment(Tower);
+	TowerBase->SetupAttachment(CapsuleCollider);
+	TowerBase->PrimaryComponentTick.bCanEverTick = false;
+	TowerHead->SetupAttachment(TowerBase);
+	TowerHead->PrimaryComponentTick.bCanEverTick = false;
+	ProjectileOrigin->SetupAttachment(TowerHead);
 	AnimSkeleton->SetupAttachment(CapsuleCollider);
 	AnimSkeleton->SetVisibility(false);
-	AnimSkeleton->SetRelativeScale3D(FVector(1.23f));
+	AnimSkeleton->SetRelativeScale3D(FVector(DEFAULT_PAWN_SCALE));
 	AnimSkeleton->PrimaryComponentTick.bCanEverTick = true;
-	
 
 	HealthComponent->SetMaxHealth(2.0f); //explain
 	
@@ -91,7 +92,9 @@ AEnemyTower::AEnemyTower()
 void AEnemyTower::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	IdleRotationRangeRadians = FMath::DegreesToRadians(IdleRotationRange);
+	FOVRadians = FMath::DegreesToRadians(FOV);
+
 	
 	if(TowerType != ETowerType::Custom)
 	{
@@ -112,11 +115,11 @@ void AEnemyTower::BeginPlay()
 	const FRotator ActorRotation = GetActorRotation();
 	RotationRangeUpperBound = FRotator(ActorRotation.Pitch, ActorRotation.Yaw + GetIdleRotationRange()/2, ActorRotation.Roll);
 	RotationRangeLowerBound = FRotator(ActorRotation.Pitch, ActorRotation.Yaw - GetIdleRotationRange()/2, ActorRotation.Roll);
-	if(IsValid(Tower) && IsValid(ProjectileOrigin))
+	if(IsValid(TowerHead) && IsValid(ProjectileOrigin))
 	{
-		SetSinStartEndRotation(Tower->GetComponentRotation(), RotationRangeLowerBound);
+		SetSinStartEndRotation(TowerHead->GetComponentRotation(), RotationRangeLowerBound);
 
-		InternOriginLocation = Tower->GetComponentLocation();
+		InternOriginLocation = TowerHead->GetComponentLocation();
 		InternOriginLocation.Z = ProjectileOrigin->GetComponentLocation().Z;
 	}
 
@@ -226,11 +229,11 @@ bool AEnemyTower::IsAlive() const
 
 void AEnemyTower::OnDeath(TWeakObjectPtr<AController> DamageInstigator)
 {
-	if(IsValid(AnimSkeleton) && IsValid(Tower) && IsValid(Base) && IsValid(CapsuleCollider))
+	if(IsValid(AnimSkeleton) && IsValid(TowerHead) && IsValid(TowerBase) && IsValid(CapsuleCollider))
 	{
+		TowerHead->SetVisibility(false);
+		TowerBase->SetVisibility(false);
 		AnimSkeleton->SetComponentTickEnabled(true);
-		Tower->SetVisibility(false);
-		Base->SetVisibility(false);
 		AnimSkeleton->SetVisibility(true);
 		AnimSkeleton->PlayAnimation(DeathAnimation, false);
 		CapsuleCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -248,7 +251,18 @@ void AEnemyTower::OnAnimFinished()
 	if(IsValid(AnimSkeleton))
 	{
 		AnimSkeleton->SetComponentTickEnabled(false);
+		if(IsValid(DeadMesh))
+		{
+			const TWeakObjectPtr<AStaticMeshActor> DeadTower = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), AnimSkeleton->GetComponentTransform());
+			if(DeadTower.IsValid() && IsValid(DeadTower->GetStaticMeshComponent()))
+			{
+				DeadTower->SetMobility(EComponentMobility::Stationary);
+				DeadTower->GetStaticMeshComponent()->SetStaticMesh(DeadMesh);
+			}
+			Destroy();
+		}
 	}
+	
 }
 
 void AEnemyTower::OnTargetLost()
@@ -256,7 +270,7 @@ void AEnemyTower::OnTargetLost()
 	TowerTargetingState = ETowerTargetingState::TargetLost;
 	CurrentTurningTime = 0.0f;
 
-	const FRotator StartRotation = Tower->GetComponentRotation();
+	const FRotator StartRotation = TowerHead->GetComponentRotation();
 	const FQuat ActorQuaternion = GetActorQuat();
 	const float DistanceToUpper = ActorQuaternion.AngularDistance(RotationRangeUpperBound.Quaternion());
 	const float DistanceToLower = ActorQuaternion.AngularDistance(RotationRangeLowerBound.Quaternion());
@@ -273,9 +287,9 @@ void AEnemyTower::OnTargetLost()
 
 void AEnemyTower::OnSinRotationFinished()
 {	
-	if(IsValid(Tower))
+	if(IsValid(TowerHead))
 	{
-		const FRotator StartRotation = Tower->GetComponentRotation();
+		const FRotator StartRotation = TowerHead->GetComponentRotation();
 		const FRotator EndRotation = StartRotation.Equals(RotationRangeUpperBound) ? RotationRangeLowerBound : RotationRangeUpperBound;
 		
 		SetSinStartEndRotation(StartRotation, EndRotation);
@@ -400,8 +414,8 @@ float AEnemyTower::GetIdleRotationRange() const
 
 bool AEnemyTower::IsDirectionInRotationRange(const FVector& Direction) const
 {	
-	const float DegreeDistance = FMath::RadiansToDegrees(acos(GetActorForwardVector().Dot(Direction)));
-	return DegreeDistance < GetIdleRotationRange()/2;
+	const float RadiansDistance = acos(GetActorForwardVector().Dot(Direction));
+	return RadiansDistance < IdleRotationRangeRadians;
 	//Alternative
 	// const FQuat TargetQuaternion = Direction.Rotation().Quaternion();
 	// if(FMath::RadiansToDegrees(GetActorQuat().AngularDistance(TargetQuaternion)) > GetIdleRotationRange()/2)
@@ -417,13 +431,13 @@ float AEnemyTower::GetFOV() const
 
 bool AEnemyTower::IsDirectionInFOV(const FVector& Direction) const
 {
-	if(!IsValid(Tower))
+	if(!IsValid(TowerHead))
 	{
 		return false;
 	}
 	//Todo: Make Radians to improve performance
-	const float DegreeDistance = FMath::RadiansToDegrees(acos(Tower->GetForwardVector().Dot(Direction)));
-	return DegreeDistance < GetFOV()/2;
+	const float RadiansDistance = acos(TowerHead->GetForwardVector().Dot(Direction));
+	return RadiansDistance < FOVRadians;
 }
 
 bool AEnemyTower::IsPredictingTower() const
@@ -453,7 +467,7 @@ bool AEnemyTower::ShouldSkipUpdate()
 	{
 		return true;
 	}
-	return !IsValid(ProjectileOrigin) || !IsValid(Tower) || !IsValid(GetWorld()) || !IsAlive();
+	return !IsValid(ProjectileOrigin) || !IsValid(TowerHead) || !IsValid(GetWorld()) || !IsAlive();
 }
 
 float AEnemyTower::GetDesiredProjectileTravelTime(const FVector& Location) const
@@ -473,13 +487,13 @@ float AEnemyTower::GetDesiredProjectileTravelTime(const FVector& Location) const
 void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float DeltaTime)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(EnemyTower::RotateTowerSin);
-	if(IsValid(Tower))
+	if(IsValid(TowerHead))
 	{
 		CurrentTurningTime += DeltaTime;
 
 		const float TurningTime = SinDeltaDegree / AverageDegreePerSecond;
 		const float Alpha = FMath::Clamp<float>(CurrentTurningTime / TurningTime, 0.0f, 1.0f);
-		Tower->SetWorldRotation(FMath::InterpSinInOut(SinStartRotation, SinEndRotation, Alpha));
+		TowerHead->SetWorldRotation(FMath::InterpSinInOut(SinStartRotation, SinEndRotation, Alpha));
 	
 		if(Alpha + UE_FLOAT_NORMAL_THRESH > 1.0f)
 		{
@@ -491,7 +505,7 @@ void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float
 
 void AEnemyTower::GetFireTargetLocation(const FVector& InTargetLocation,  FVector& OutFireTargetLocation, float& OutDesiredProjectileSpeed)
 {
-	if(!TargetPawn.IsValid() || !IsValid(Tower))
+	if(!TargetPawn.IsValid() || !IsValid(TowerHead))
 	{
 		return;
 	}
@@ -515,15 +529,15 @@ void AEnemyTower::GetFireTargetLocation(const FVector& InTargetLocation,  FVecto
 
 bool AEnemyTower::RotateToDesiredRotationAtDegreeRate(const FRotator& DesiredRotation, const float DeltaTime, const float DesiredMaxDegreePerSecond) const
 {
-	if(IsValid(Tower))
+	if(IsValid(TowerHead))
 	{
 		const FQuat TargetQuaternion = DesiredRotation.Quaternion();
-		const FQuat ShortestRotation = FQuat::FindBetweenVectors(Tower->GetForwardVector(), DesiredRotation.Vector());
+		const FQuat ShortestRotation = FQuat::FindBetweenVectors(TowerHead->GetForwardVector(), DesiredRotation.Vector());
 		const float DeltaDegree = FMath::RadiansToDegrees(ShortestRotation.GetAngle());
 		const float AngleRatio = FMath::Clamp( (DeltaTime * DesiredMaxDegreePerSecond) / DeltaDegree, 0.0f, 1.0f);
-		const FQuat NewRotation = FQuat::Slerp(Tower->GetComponentRotation().Quaternion(),TargetQuaternion , AngleRatio);
+		const FQuat NewRotation = FQuat::Slerp(TowerHead->GetComponentRotation().Quaternion(),TargetQuaternion , AngleRatio);
 				
-		Tower->SetWorldRotation(NewRotation);
+		TowerHead->SetWorldRotation(NewRotation);
 		if(TargetQuaternion.Equals(NewRotation))
 		{
 			return true;
@@ -580,14 +594,14 @@ void AEnemyTower::DrawTickDebug() const
 			break;
 		default: ;
 		}
-		DrawDebugCircleArc(GetWorld(), InternOriginLocation, GetMaxRange(), Tower->GetForwardVector(), FMath::DegreesToRadians(GetFOV()/2), 20.0f, DebugColor, false, -1.0f, 2.0f);
-		const FVector StartDirection = FRotator(0.0f, GetFOV() / 2, 0.0f).RotateVector(Tower->GetForwardVector());
+		DrawDebugCircleArc(GetWorld(), InternOriginLocation, GetMaxRange(), TowerHead->GetForwardVector(), FMath::DegreesToRadians(GetFOV()/2), 20.0f, DebugColor, false, -1.0f, 2.0f);
+		const FVector StartDirection = FRotator(0.0f, GetFOV() / 2, 0.0f).RotateVector(TowerHead->GetForwardVector());
 		for(int32 i = 0; i < GetFOV(); i++)
 		{
 			FVector NewDirection = FRotator(0.0f, -i, 0.0f).RotateVector(StartDirection);
 			if(ShouldRestrainFOVToRotationRange())
 			{
-				if(FMath::RadiansToDegrees(NewDirection.Rotation().Quaternion().AngularDistance(GetActorForwardVector().Rotation().Quaternion())) > GetIdleRotationRange() / 2)
+				if(NewDirection.Rotation().Quaternion().AngularDistance(GetActorForwardVector().Rotation().Quaternion()) > IdleRotationRangeRadians)
 				{
 					continue;
 				}

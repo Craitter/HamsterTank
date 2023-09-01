@@ -10,6 +10,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/CollectPickupComponent.h"
+#include "HamsterTank/HamsterTank.h"
 
 class UCollectPickupComponent;
 // Sets default values
@@ -45,7 +46,7 @@ void APickupActor::SetCollected()
 	if(IsValid(PickupParticle))
 	{
 		PickupParticle->Deactivate();
-		PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, CurrentPickupData.PickupNiagara, GetActorLocation());
+		PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, CurrentPickupData.PickupNiagara, GetActorLocation(), GetActorRotation(), FVector(DEFAULT_PAWN_SCALE));
 		PickupParticle->OnSystemFinished.AddDynamic(this, &ThisClass::OnNiagaraFinished);
 	}
 	// if(IsValid(CurrentPickupData.PickupSound))

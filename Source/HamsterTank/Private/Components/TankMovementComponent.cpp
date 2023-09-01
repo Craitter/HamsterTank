@@ -143,7 +143,7 @@ void UTankMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 				HandleImpact(Hit, DeltaTime, DeltaVelocity);
 				// Try to slide the remaining distance along the surface.
 				SlideAlongSurface(DeltaVelocity, 1.f-Hit.Time, Hit.Normal, Hit, true);
-				// UE_LOG(LogTemp, Warning , TEXT("sliding"));
+				// UE_LOG(LogTemp, Warning , TEXT("sliding"));,,,,,,
 			}
 		}
 		else
