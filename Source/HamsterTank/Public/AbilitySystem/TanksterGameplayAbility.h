@@ -7,11 +7,39 @@
 #include "TanksterGameplayAbility.generated.h"
 
 /**
- * 
+ * ETanksterAbilityActivationPolicy
+ *
+ *	Defines how an ability is meant to activate.
  */
+UENUM(BlueprintType)
+enum class ETanksterAbilityActivationPolicy : uint8
+{
+	// Try to activate the ability when the input is triggered.
+	OnInputTriggered,
+
+	// Continually try to activate the ability while the input is active.
+	WhileInputActive,
+
+	// Try to activate the ability when an avatar is assigned.
+	OnSpawn
+};
 UCLASS()
 class HAMSTERTANK_API UTanksterGameplayAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
+public:
+	UTanksterGameplayAbility();
+
+protected:
+	virtual void OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
+public:
+
+	ETanksterAbilityActivationPolicy GetActivationPolicy() const { return ActivationPolicy; }
+
+	void TryActivateAbilityOnSpawn(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) const;
+protected:
 	
+	// Defines how this ability is meant to activate.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Ability Activation")
+	ETanksterAbilityActivationPolicy ActivationPolicy;
 };
