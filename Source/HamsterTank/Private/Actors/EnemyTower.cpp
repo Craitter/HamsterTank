@@ -5,7 +5,9 @@
 #include "Actors/EnemyTower.h"
 
 
-#include "HamsterTankGameState.h"
+#include "AbilitySystem/TanksterAbilitySystemComponent.h"
+#include "AbilitySystem/AttributeSets/AmmoAttributeSet.h"
+#include "AbilitySystem/AttributeSets/HealthAttributeSet.h"
 #include "Actors/PickupActor.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/FireProjectileComponent.h"
@@ -14,6 +16,7 @@
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/TankMovementComponent.h"
 #include "Engine/StaticMeshActor.h"
+#include "GameClasses/HamsterTankGameState.h"
 #include "HamsterTank/HamsterTank.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -48,6 +51,12 @@ AEnemyTower::AEnemyTower()
 	if(!ensure(IsValid(HandleDamageComponent))) return;
 	AnimSkeleton = CreateDefaultSubobject<USkeletalMeshComponent>("AnimSkeleton");
 	if(!ensure(IsValid(AnimSkeleton))) return;
+	TanksterAbilitySystem = CreateDefaultSubobject<UTanksterAbilitySystemComponent>("AbilitySystem");
+	if(!ensure(IsValid(TanksterAbilitySystem))) return;
+	HealthAttributeSet = CreateDefaultSubobject<UHealthAttributeSet>("HealthAttributeSet");
+	if(!ensure(IsValid(HealthAttributeSet))) return;
+	AmmoAttributeSet = CreateDefaultSubobject<UAmmoAttributeSet>("AmmoAttributeSet");
+	if(!ensure(IsValid(AmmoAttributeSet))) return;
 	
 	SetRootComponent(CapsuleCollider);
 	TowerBase->SetupAttachment(CapsuleCollider);
@@ -86,12 +95,15 @@ AEnemyTower::AEnemyTower()
 	//Fire projectile component same
 	//Then test it all out with debugging and everything set
 	//Then implement fire modes
+
+	TanksterAbilitySystem->SetReplicationMode(EGameplayEffectReplicationMode::Full);
 }
 
 // Called when the game starts or when spawned
 void AEnemyTower::BeginPlay()
 {
 	Super::BeginPlay();
+	
 	IdleRotationRangeRadians = FMath::DegreesToRadians(IdleRotationRange);
 	FOVRadians = FMath::DegreesToRadians(FOV);
 
@@ -127,6 +139,26 @@ void AEnemyTower::BeginPlay()
 	{
 		HealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnDeath); //unbind
 	}
+
+	if(IsValid(TanksterAbilitySystem))
+	{
+		TanksterAbilitySystem->InitAbilityActorInfo(this, this);
+
+		if(IsValid(HealthAttributeSet))
+		{
+			//Begin Binding Delegates On CharacterAttributeValueChanged
+			HealthChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetHealthAttribute()).AddUObject(this, &ThisClass::HealthChanged);
+			MaxHealthChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetMaxHealthAttribute()).AddUObject(this, &ThisClass::MaxHealthChanged);
+		}
+		if(IsValid(AmmoAttributeSet))
+		{
+			//Begin Binding Delegates On AmmoAttributeValueChanged
+			AmmoChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetAmmoAttribute()).AddUObject(this, &ThisClass::AmmoChanged);
+			MaxAmmoChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetMaxAmmoAttribute()).AddUObject(this, &ThisClass::MaxAmmoChanged);
+			//End Binding Delegates On AmmoAttributeValueChanged
+		}
+		TanksterAbilitySystem->InitializeDefaultAttributeValues(InitAttributesEffects);
+	}
 }
 
 void AEnemyTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -137,6 +169,32 @@ void AEnemyTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 	OnSinRotationFinishedDelegateHandle.Unbind();
 	OnPlayerFoundDelegateHandle.Unbind();
+
+	if(IsValid(TanksterAbilitySystem))
+	{
+
+		if(IsValid(HealthAttributeSet))
+		{
+			//Begin Remove Binding Delegates On HealthAttributeValueChanged
+			TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetHealthAttribute()).Remove(HealthChangedDelegateHandle);
+			TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetMaxHealthAttribute()).Remove(MaxHealthChangedDelegateHandle);
+			//End Remove Binding Delegates On HealthAttributeValueChanged
+		}
+		
+		if(IsValid(AmmoAttributeSet))
+		{
+			//Begin Remove Binding Delegates On AmmoAttributeValueChanged
+			TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetAmmoAttribute()).Remove(AmmoChangedDelegateHandle);
+			TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetMaxAmmoAttribute()).Remove(MaxAmmoChangedDelegateHandle);
+			//End Remove Binding Delegates On AmmoAttributeValueChanged
+		}
+		
+	}
+	HealthChangedDelegateHandle.Reset();
+	MaxHealthChangedDelegateHandle.Reset();
+	AmmoChangedDelegateHandle.Reset();
+	MaxAmmoChangedDelegateHandle.Reset();
+	
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -544,6 +602,73 @@ bool AEnemyTower::RotateToDesiredRotationAtDegreeRate(const FRotator& DesiredRot
 		}
 	}
 	return false;
+}
+
+void AEnemyTower::HealthChanged(const FOnAttributeChangeData& Data)
+{
+}
+
+void AEnemyTower::MaxHealthChanged(const FOnAttributeChangeData& Data)
+{
+}
+
+void AEnemyTower::AmmoChanged(const FOnAttributeChangeData& Data)
+{
+}
+
+void AEnemyTower::MaxAmmoChanged(const FOnAttributeChangeData& Data)
+{
+}
+
+float AEnemyTower::GetHealth() const
+{
+	if(IsValid(HealthAttributeSet))
+	{
+		return HealthAttributeSet->GetHealth();
+	}
+	return 0.0f;
+}
+
+float AEnemyTower::GetMaxHealth() const
+{
+	if(IsValid(HealthAttributeSet))
+	{
+		return HealthAttributeSet->GetMaxHealth();
+	}
+	return 0.0f;
+}
+
+float AEnemyTower::GetAmmo() const
+{
+	if(IsValid(AmmoAttributeSet))
+	{
+		return AmmoAttributeSet->GetAmmo();
+	}
+	return 0.0f;
+}
+
+float AEnemyTower::GetMaxAmmo() const
+{
+	if(IsValid(AmmoAttributeSet))
+	{
+		return AmmoAttributeSet->GetMaxAmmo();
+	}
+	return 0.0f;
+}
+
+UAbilitySystemComponent* AEnemyTower::GetAbilitySystemComponent() const
+{
+	return TanksterAbilitySystem;
+}
+
+TWeakObjectPtr<UHealthAttributeSet> AEnemyTower::GetHealthAttributeSet() const
+{
+	return HealthAttributeSet;
+}
+
+TWeakObjectPtr<UAmmoAttributeSet> AEnemyTower::GetAmmoAttributeSet() const
+{
+	return AmmoAttributeSet;
 }
 
 bool AEnemyTower::IsAimTargetLocationValid(const FVector& AimTargetLocation) const

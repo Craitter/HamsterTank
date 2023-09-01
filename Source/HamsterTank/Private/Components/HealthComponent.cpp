@@ -3,8 +3,7 @@
 
 #include "Components/HealthComponent.h"
 
-#include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
+
 
 // Sets default values for this component's properties
 UHealthComponent::UHealthComponent()

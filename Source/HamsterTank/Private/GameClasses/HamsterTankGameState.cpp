@@ -1,10 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "HamsterTankGameState.h"
 
-#include "HamsterTank/HamsterTankGameModeBase.h"
-#include "Kismet/GameplayStatics.h"
+#include "GameClasses/HamsterTankGameState.h"
+
 
 bool AHamsterTankGameState::HasMatchFinished() const
 {

@@ -9,7 +9,7 @@
 
 #if WITH_GAMEPLAY_DEBUGGER
 #include "GameplayDebugger.h"
-#include "Public\Debug\GameplayDebuggerCategory_Tank.h"
+#include "Debug/GameplayDebuggerCategory_Tank.h"
 #endif // WITH_GAMEPLAY_DEBUGGER
 class FHamsterTankModule : public IModuleInterface
 {

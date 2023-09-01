@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "TankPlayerController.h"
+
+#include "GameClasses/Player/TankPlayerController.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -19,6 +20,10 @@ ATankPlayerController::ATankPlayerController()
 void ATankPlayerController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+}
+
+void ATankPlayerController::OnObjectiveTowerDestroyed()
+{
 }
 
 void ATankPlayerController::OnPossess(APawn* InPawn)

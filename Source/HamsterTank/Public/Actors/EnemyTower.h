@@ -3,10 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Actor.h"
 #include "EnemyTower.generated.h"
 
 
+class UTanksterGameplayEffect;
+struct FOnAttributeChangeData;
+class UAmmoAttributeSet;
+class UHealthAttributeSet;
+class UTanksterAbilitySystemComponent;
 class UHandleDamageComponent;
 class UHealthComponent;
 class UCapsuleComponent;
@@ -84,7 +90,7 @@ DECLARE_DELEGATE(FOnSinRotationFinishedDelegate);
 DECLARE_DELEGATE_OneParam(FOnPlayerFoundDelegate, TWeakObjectPtr<APawn>);
 
 UCLASS()
-class HAMSTERTANK_API AEnemyTower : public AActor
+class HAMSTERTANK_API AEnemyTower : public AActor, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 	
@@ -123,6 +129,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UHandleDamageComponent> HandleDamageComponent = {nullptr};
+
+	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
+	TObjectPtr<UTanksterAbilitySystemComponent> TanksterAbilitySystem = {nullptr};
+	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
+	TObjectPtr<UHealthAttributeSet> HealthAttributeSet = {nullptr};
+	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
+	TObjectPtr<UAmmoAttributeSet> AmmoAttributeSet = {nullptr};
 	
 	//This changes the min and max rotation on idle, ActorForwardVector +- IdleRotationRange/2	
 	UPROPERTY(EditAnywhere, Category = "Tower|Idle", meta = (ClampMin = "0", ClampMax = "360.0", Units = "Degrees"))
@@ -192,6 +205,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Tower")
 	TObjectPtr<UAnimationAsset> DeathAnimation = {nullptr};
+
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<UTanksterGameplayEffect>> InitAttributesEffects = {nullptr};
 	
 public:	
 	// Called every frame
@@ -241,7 +257,51 @@ protected:
 	 * @return true when the DesiredRotation has been Reached
 	 */
 	bool RotateToDesiredRotationAtDegreeRate(const FRotator& DesiredRotation, const float DeltaTime, const float DesiredMaxDegreePerSecond) const;
+
+protected:
 	
+
+	//Begin Health AttributeChangedCallbacks
+	virtual void HealthChanged(const FOnAttributeChangeData& Data);
+	virtual void MaxHealthChanged(const FOnAttributeChangeData& Data);
+	//End Health AttributeChangedCallbacks
+	
+	//Begin Ammo AttributeChangedCallbacks
+	virtual void AmmoChanged(const FOnAttributeChangeData& Data);
+	virtual void MaxAmmoChanged(const FOnAttributeChangeData& Data);
+	//End Ammo AttributeChangedCallbacks
+
+	//Begin Health AttributeChangedDelegate
+	FDelegateHandle HealthChangedDelegateHandle;
+	FDelegateHandle MaxHealthChangedDelegateHandle;
+	//End Health AttributeChangedDelegate
+
+	//Begin Health AttributeChangedDelegate
+	FDelegateHandle AmmoChangedDelegateHandle;
+	FDelegateHandle MaxAmmoChangedDelegateHandle;
+	//End Health AttributeChangedDelegate
+
+public:
+	//Begin Health Attribute Getter
+	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Health")
+	float GetHealth() const;
+	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Health")
+	float GetMaxHealth() const;
+	//End Health Attribute Getter
+
+	//Begin Ammo Attribute Getter
+	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Ammo")
+	float GetAmmo() const;
+	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Ammo")
+	float GetMaxAmmo() const;
+	//End Ammo Attribute Getter
+
+	//Begin IAbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	//End IAbilitySystemInterface
+
+	TWeakObjectPtr<UHealthAttributeSet> GetHealthAttributeSet() const;
+	TWeakObjectPtr<UAmmoAttributeSet> GetAmmoAttributeSet() const;
 private:
 	void UpdateTargeting(const float DeltaTime);
 	/**
@@ -341,3 +401,5 @@ private:
 
 	float IdleRotationRangeRadians = 0.0f;
 };
+
+

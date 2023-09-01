@@ -5,6 +5,9 @@
 
 #include "Actors/TankBase.h"
 
+#include "AbilitySystem/TanksterAbilitySystemComponent.h"
+#include "AbilitySystem/AttributeSets/AmmoAttributeSet.h"
+#include "AbilitySystem/AttributeSets/HealthAttributeSet.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CherryObjectiveComponent.h"
 #include "Components/FireProjectileComponent.h"
@@ -13,6 +16,7 @@
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/TankMovementComponent.h"
+#include "GameClasses/Player/TanksterPlayerState.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "HamsterTank/HamsterTank.h"
 
@@ -116,6 +120,25 @@ void ATankBase::Tick(float DeltaTime)
 	if(IsValid(Head))
 	{
 		Head->SetRelativeRotation(FRotator(Head->GetRelativeRotation().Pitch, SpringArmComponent->GetTargetRotation().Yaw, Head->GetRelativeRotation().Roll));
+	}
+}
+
+void ATankBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	const TObjectPtr<ATanksterPlayerState> PS = GetPlayerState<ATanksterPlayerState>();
+	if(IsValid(PS))
+	{
+		HealthAttributeSet = PS->GetHealthAttributeSet();
+		AmmoAttributeSet = PS->GetAmmoAttributeSet();
+		
+		TanksterAbilitySystem = Cast<UTanksterAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+	}
+	if(TanksterAbilitySystem.IsValid())
+	{
+		TanksterAbilitySystem->InitAbilityActorInfo(PS, this);
+		TanksterAbilitySystem->InitializeDefaultAttributeValues(InitAttributesEffects);
 	}
 }
 
@@ -267,7 +290,7 @@ int32 ATankBase::GetCurrentAmmo() const
 	return 0;
 }
 
-int32 ATankBase::GetMaxAmmo() const
+int32 ATankBase::GetMaxAmmoDEPRECATEd() const
 {
 	if(IsValid(FireProjectileComponent))
 	{
@@ -287,11 +310,7 @@ FString ATankBase::GetBodyName() const
 
 bool ATankBase::IsAlive() const
 {
-	if(IsValid(HealthComponent))
-	{
-		return HealthComponent->IsAlive();
-	}
-	return false;
+	return GetHealth() > 0.0f;
 }
 
 FVector ATankBase::GetLastHitDirection() const
@@ -301,6 +320,50 @@ FVector ATankBase::GetLastHitDirection() const
 		return HandleDamageComponent->GetLastHitDirection();
 	}
 	return FVector::ZeroVector;
+}
+
+
+
+
+
+UAbilitySystemComponent* ATankBase::GetAbilitySystemComponent() const
+{
+	return TanksterAbilitySystem.Get();
+}
+
+float ATankBase::GetHealth() const
+{
+	if(HealthAttributeSet.IsValid())
+	{
+		return HealthAttributeSet->GetHealth();
+	}
+	return 0.0f;
+}
+
+float ATankBase::GetMaxHealth() const
+{
+	if(HealthAttributeSet.IsValid())
+	{
+		return HealthAttributeSet->GetMaxHealth();
+	}
+	return 0.0f;
+}
+
+float ATankBase::GetAmmo() const
+{
+	if(AmmoAttributeSet.IsValid())
+	{
+		return AmmoAttributeSet->GetAmmo();
+	}
+	return 0.0f;
+}
+float ATankBase::GetMaxAmmo() const
+{
+	if(AmmoAttributeSet.IsValid())
+	{
+		return AmmoAttributeSet->GetMaxAmmo();
+	}
+	return 0.0f;
 }
 
 // FVector ATankBase::GetDesiredTargetRotation() const

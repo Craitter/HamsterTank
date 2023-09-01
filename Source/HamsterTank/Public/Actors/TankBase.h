@@ -3,9 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
+class UTanksterGameplayEffect;
+class UAmmoAttributeSet;
+class UHealthAttributeSet;
+class UTanksterAbilitySystemComponent;
 class UNiagaraComponent;
 class UCherryObjectiveComponent;
 class UCollectPickupComponent;
@@ -27,7 +32,7 @@ class USpringArmComponent;
 
 
 UCLASS()
-class HAMSTERTANK_API ATankBase : public APawn
+class HAMSTERTANK_API ATankBase : public APawn, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -39,6 +44,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+	
 	void ClearVelocity() const;
 protected:
 	// Called when the game starts or when spawned
@@ -87,6 +94,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Fire")
 	TObjectPtr<UAnimMontage> FireMontage = {nullptr};
 
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<UTanksterGameplayEffect>> InitAttributesEffects = {nullptr};
+
 public:	
 	// void RequestAimAtTarget(const FVector& TargetLocation);
 	void RequestFire();
@@ -96,7 +106,10 @@ public:
 private:
 	//InternValue
 	// FVector DesiredTowerAimLocation = FVector::ZeroVector;
-	
+	TWeakObjectPtr<UTanksterAbilitySystemComponent> TanksterAbilitySystem = {nullptr};
+	TWeakObjectPtr<UHealthAttributeSet> HealthAttributeSet = {nullptr};
+	TWeakObjectPtr<UAmmoAttributeSet> AmmoAttributeSet = {nullptr};
+
 public: //simple Getter Functions
 	TWeakObjectPtr<USphereComponent> GetSphere() const;
 
@@ -132,7 +145,7 @@ public: //simple Getter Functions
 	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
 	int32 GetCurrentAmmo() const;
 	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
-	int32 GetMaxAmmo() const;
+	int32 GetMaxAmmoDEPRECATEd() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Tank|Body")
 	FString GetBodyName() const;
@@ -143,4 +156,25 @@ public: //simple Getter Functions
 	UFUNCTION(BlueprintCallable, Category = "Tank|Damage")
 	FVector GetLastHitDirection() const;
 	// FVector GetDesiredTargetRotation() const;
+
+
+	//Begin AbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	//End AbilitySystemInterface
+
+
+
+	//Begin Health Attribute Getter
+	UFUNCTION(BlueprintCallable, Category = "Protelum|AbilitySystem|AttributeSet|Health")
+	float GetHealth() const;
+	UFUNCTION(BlueprintCallable, Category = "Protelum|AbilitySystem|AttributeSet|Health")
+	float GetMaxHealth() const;
+	//End Health Attribute Getter
+
+	//Begin Ammo Attribute Getter
+	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Ammo")
+	float GetAmmo() const;
+	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Ammo")
+	float GetMaxAmmo() const;
+	//End Ammo Attribute Getter
 };
