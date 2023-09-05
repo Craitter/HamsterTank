@@ -3,13 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AbilitySystemInterface.h"
-#include "GameplayEffect.h"
 #include "GameFramework/Actor.h"
 #include "ProjectileBase.generated.h"
 
 
-class UTanksterGameplayEffect;
 class UNiagaraSystem;
 class UNiagaraComponent;
 class UTankProjectileMovementComponent;
@@ -17,7 +14,7 @@ class UPointLightComponent;
 class USphereComponent;
 
 UCLASS()
-class HAMSTERTANK_API AProjectileBase : public AActor, public IAbilitySystemInterface
+class HAMSTERTANK_API AProjectileBase : public AActor
 {
 	GENERATED_BODY()
 	
@@ -52,13 +49,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	float BaseDamage = 1.0f;
 
-	
 	virtual float ComputeDamage();
 
-	
 public:	
-	UPROPERTY(EditDefaultsOnly)
-	FGameplayEffectSpecHandle EffectToApply;
+
+
 	
 	UFUNCTION()
 	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);

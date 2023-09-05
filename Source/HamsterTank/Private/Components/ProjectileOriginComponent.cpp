@@ -13,11 +13,6 @@ UProjectileOriginComponent::UProjectileOriginComponent()
 	// ...
 }
 
-FFireProjectileData* UProjectileOriginComponent::GetProjectileData()
-{
-	return &FireProjectileData;
-}
-
 
 
 

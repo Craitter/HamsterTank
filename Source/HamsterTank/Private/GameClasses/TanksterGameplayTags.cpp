@@ -22,7 +22,7 @@ void FTanksterGameplayTags::AddAllTags(UGameplayTagsManager& Manager)
 	AddTag(InputTag_Move, "InputTag.Move", "Move input.");
 	AddTag(InputTag_Look_Mouse, "InputTag.Look.Mouse", "Look (mouse) input.");
 	AddTag(InputTag_Look_Stick, "InputTag.Look.Stick", "Look (stick) input.");
-	AddTag(AbilityInputTag_Fire, "InputTag.Ability.Fire", "LMB");
+	// AddTag(Gameplay_AbilityInputBlocked, "Gameplay.BlockInput.Ability", "Block Ability Input");
 	// AddTag(Gameplay_NativeInputBlocked, "Gameplay.BlockInput.Native", "Block Native Input");
 	// AddTag(Gameplay_AllInputBlocked, "Gameplay.BlockInput.All", "Block All Input");
 }

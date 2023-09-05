@@ -5,9 +5,7 @@
 
 #include "Actors/TankBase.h"
 
-#include "AbilitySystem/TanksterAbilitySet.h"
 #include "AbilitySystem/TanksterAbilitySystemComponent.h"
-#include "AbilitySystem/TanksterGameplayAbility.h"
 #include "AbilitySystem/AttributeSets/AmmoAttributeSet.h"
 #include "AbilitySystem/AttributeSets/HealthAttributeSet.h"
 #include "Camera/CameraComponent.h"
@@ -140,10 +138,7 @@ void ATankBase::PossessedBy(AController* NewController)
 	if(TanksterAbilitySystem.IsValid())
 	{
 		TanksterAbilitySystem->InitAbilityActorInfo(PS, this);
-		if(IsValid(InitialAbilitySet))
-		{
-			InitialAbilitySet->GiveToAbilitySystem(TanksterAbilitySystem.Get(), &GrantedHandles, this);
-		}
+		TanksterAbilitySystem->InitializeDefaultAttributeValues(InitAttributesEffects);
 	}
 }
 

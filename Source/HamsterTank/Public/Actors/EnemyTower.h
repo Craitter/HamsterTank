@@ -4,13 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
-#include "AbilitySystem/TanksterAbilitySet.h"
 #include "GameFramework/Actor.h"
 #include "EnemyTower.generated.h"
 
 
-struct FTanksterAbilitySet_GrantedHandles;
-class UTanksterAbilitySet;
 class UTanksterGameplayEffect;
 struct FOnAttributeChangeData;
 class UAmmoAttributeSet;
@@ -210,9 +207,7 @@ protected:
 	TObjectPtr<UAnimationAsset> DeathAnimation = {nullptr};
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<UTanksterAbilitySet> InitialAbilitySet = {nullptr};
-
-	FTanksterAbilitySet_GrantedHandles GrantedHandles;
+	TArray<TSubclassOf<UTanksterGameplayEffect>> InitAttributesEffects = {nullptr};
 	
 public:	
 	// Called every frame

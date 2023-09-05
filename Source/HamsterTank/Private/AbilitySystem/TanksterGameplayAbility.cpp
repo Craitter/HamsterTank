@@ -8,9 +8,6 @@
 UTanksterGameplayAbility::UTanksterGameplayAbility()
 {
 	ActivationPolicy = ETanksterAbilityActivationPolicy::OnInputTriggered;
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 }
 
 void UTanksterGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo,

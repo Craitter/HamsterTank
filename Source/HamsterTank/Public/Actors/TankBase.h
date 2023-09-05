@@ -4,14 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
-#include "AbilitySystem/TanksterAbilitySet.h"
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
-struct FTanksterAbilitySet_GrantedHandles;
-class UTanksterAbilitySet;
-struct FGameplayAbilitySpecHandle;
-class UTanksterGameplayAbility;
 class UTanksterGameplayEffect;
 class UAmmoAttributeSet;
 class UHealthAttributeSet;
@@ -99,6 +94,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Fire")
 	TObjectPtr<UAnimMontage> FireMontage = {nullptr};
 
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<UTanksterGameplayEffect>> InitAttributesEffects = {nullptr};
 
 public:	
 	// void RequestAimAtTarget(const FVector& TargetLocation);
@@ -166,12 +163,7 @@ public: //simple Getter Functions
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//End AbilitySystemInterface
 
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UTanksterAbilitySet> InitialAbilitySet = {nullptr};
-	UPROPERTY(Transient)
-	FTanksterAbilitySet_GrantedHandles GrantedHandles;
-	
-	
+
 
 	//Begin Health Attribute Getter
 	UFUNCTION(BlueprintCallable, Category = "Protelum|AbilitySystem|AttributeSet|Health")

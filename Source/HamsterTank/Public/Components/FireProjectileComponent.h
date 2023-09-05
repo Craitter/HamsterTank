@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ProjectileOriginComponent.h"
 #include "Components/ActorComponent.h"
 #include "Interface/CollectPickupInterface.h"
 #include "FireProjectileComponent.generated.h"
@@ -12,7 +11,51 @@
 class APawn;
 class AProjectileBase;
 
+USTRUCT(BlueprintType)
+struct FFireProjectileData
+{
+	GENERATED_BODY()
+public:
 
+	UPROPERTY(EditAnywhere, Category = "Spread")
+	bool bApplySpread = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Spread")
+	float YawSpreadDegree = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Cooldown")
+	bool bApplyCooldown = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Cooldown")
+	bool bRandomizeCooldown = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Cooldown")
+	float MinCooldown = 1.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Cooldown")
+	float MaxCooldown = 1.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Cooldown")
+	float FireCooldown = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	bool bApplyCustomSpeed = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	float CustomSpeed = -1.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	bool bRandomizeSpeed = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	float InMinSpeedModifier = 1.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Speed")
+	float InMaxSpeedModifier = 1.0f;
+	
+	
+	
+};
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAmmoChanged, int32);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMaxAmmoChanged, int32 /* MaxAmmo*/, int32 /* CurrentAmmo*/);
