@@ -322,9 +322,10 @@ FVector ATankBase::GetLastHitDirection() const
 	return FVector::ZeroVector;
 }
 
-
-
-
+TWeakObjectPtr<UTanksterAbilitySystemComponent> ATankBase::GetTanksterAbilitySystemComponent() const
+{
+	return TanksterAbilitySystem;
+}
 
 UAbilitySystemComponent* ATankBase::GetAbilitySystemComponent() const
 {
