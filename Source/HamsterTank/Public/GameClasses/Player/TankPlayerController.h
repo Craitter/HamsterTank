@@ -3,13 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
 #include "InputMappingContext.h"
 #include "TankPlayerController.generated.h"
 
-class UTanksterInputConfig;
-class UTanksterEnhancedInputComponent;
 class UPauseMenuWidget;
 class USoundCue;
 struct FObjectiveScore;
@@ -27,6 +24,7 @@ struct FInputActionValue;
  * 
  */
 
+
 UCLASS()
 class HAMSTERTANK_API ATankPlayerController : public APlayerController
 {
@@ -37,42 +35,61 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	void OnObjectiveTowerDestroyed();
+
 	
 protected:
-	
 	virtual void OnPossess(APawn* InPawn) override;
 
 	virtual void BeginPlay() override;
 	
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
+	
 	virtual void SetupInputComponent() override;
-
-	virtual void PostProcessInput(const float DeltaTime, const bool bGamePaused) override;
-
-	void Input_Drive(const FInputActionValue& Value);
-	void Input_LookMouse(const FInputActionValue& Value);
-	void Input_LookStick(const FInputActionValue& Value);
-
-	void Input_AbilityInputTagPressed(FGameplayTag InputTag);
-	void Input_AbilityInputTagReleased(FGameplayTag InputTag);
+	
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UTanksterInputConfig> TanksterInputConfig = {nullptr};
+	TObjectPtr<UInputAction> IA_Drive = {nullptr};
+		
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Fire = {nullptr};
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_ChangeSpringArmDirection = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Aim = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_EnableCameraRotation = {nullptr};
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_Pause = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TSoftObjectPtr<UInputMappingContext> IMC_MK_Default = {nullptr};
 	
 
 private:
+	void RequestDriveCallback(const FInputActionValue& Value);
+
+	void RequestFireCallback();
+
+	void RequestAimCallback(const FInputActionValue& Value);
+
+	void RequestPauseCallback();
 	
 	void OnPlayerDied(TWeakObjectPtr<AController> DamageInstigator);
 	
-	TWeakObjectPtr<UTanksterEnhancedInputComponent> TanksterInputComponent = {nullptr};
+	TWeakObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = {nullptr};
 	TWeakObjectPtr<ATankBase> TankPawn = {nullptr};
-
-	UPROPERTY()
-	TArray<uint32> BindHandles;
+	TWeakObjectPtr<UUISubsystem> UISubsystem = {nullptr};
+	
+	uint32 DriveDelegateHandle = 0;
+	uint32 DriveStopDelegateHandle = 0;
+	uint32 FireDelegateHandle = 0;
+	uint32 AimDelegateHandle = 0;
+	uint32 PauseDelegateHandle = 0;
 	
 };
 

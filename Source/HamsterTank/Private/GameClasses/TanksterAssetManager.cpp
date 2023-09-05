@@ -5,7 +5,6 @@
 #include "GameClasses/TanksterAssetManager.h"
 
 #include "AbilitySystemGlobals.h"
-#include "GameClasses/TanksterGameplayTags.h"
 
 
 UTanksterAssetManager& UTanksterAssetManager::Get()
@@ -27,9 +26,4 @@ void UTanksterAssetManager::StartInitialLoading()
 {
 	Super::StartInitialLoading();
 	UAbilitySystemGlobals::Get().InitGlobalData();
-
-	// UGameplayCueManager::Get()
-
-	//Load Native Tags
-	FTanksterGameplayTags::InitializeNativeTags();
 }

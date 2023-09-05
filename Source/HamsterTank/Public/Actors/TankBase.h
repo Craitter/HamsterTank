@@ -159,7 +159,6 @@ public: //simple Getter Functions
 
 
 	//Begin AbilitySystemInterface
-	TWeakObjectPtr<UTanksterAbilitySystemComponent> GetTanksterAbilitySystemComponent() const;
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//End AbilitySystemInterface
 
