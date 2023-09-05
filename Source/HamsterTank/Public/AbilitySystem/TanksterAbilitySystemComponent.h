@@ -24,7 +24,6 @@ protected:
 	
 
 public:
-	void InitializeDefaultAttributeValues(const TArray<TSubclassOf<UTanksterGameplayEffect>>& DefaultAttributeEffects);
 	
 	virtual void AbilitySpecInputPressed(FGameplayAbilitySpec& Spec) override;
 	virtual void AbilitySpecInputReleased(FGameplayAbilitySpec& Spec) override;

@@ -5,6 +5,7 @@
 #include "Actors/EnemyTower.h"
 
 
+#include "AbilitySystem/TanksterAbilitySet.h"
 #include "AbilitySystem/TanksterAbilitySystemComponent.h"
 #include "AbilitySystem/AttributeSets/AmmoAttributeSet.h"
 #include "AbilitySystem/AttributeSets/HealthAttributeSet.h"
@@ -157,7 +158,10 @@ void AEnemyTower::BeginPlay()
 			MaxAmmoChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetMaxAmmoAttribute()).AddUObject(this, &ThisClass::MaxAmmoChanged);
 			//End Binding Delegates On AmmoAttributeValueChanged
 		}
-		TanksterAbilitySystem->InitializeDefaultAttributeValues(InitAttributesEffects);
+		if(IsValid(InitialAbilitySet))
+		{
+			InitialAbilitySet->GiveToAbilitySystem(TanksterAbilitySystem, &GrantedHandles, this);
+		}
 	}
 }
 

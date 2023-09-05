@@ -26,7 +26,7 @@ public:
 	FGameplayTag InputTag_Move;
 	FGameplayTag InputTag_Look_Mouse;
 	FGameplayTag InputTag_Look_Stick;
-
+	FGameplayTag AbilityInputTag_Fire;
 
 	// FGameplayTag Gameplay_AbilityInputBlocked;
 	// FGameplayTag Gameplay_NativeInputBlocked;
