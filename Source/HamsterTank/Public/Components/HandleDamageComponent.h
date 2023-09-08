@@ -7,7 +7,7 @@
 #include "HandleDamageComponent.generated.h"
 
 
-class UHealthComponent;
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class HAMSTERTANK_API UHandleDamageComponent : public UActorComponent
@@ -40,6 +40,4 @@ public:
 
 protected:
 	FVector LastHitDirection = FVector::ZeroVector;
-private:
-	TWeakObjectPtr<UHealthComponent> AssociatedHealthComponent = {nullptr};
 };

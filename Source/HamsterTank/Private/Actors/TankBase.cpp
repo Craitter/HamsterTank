@@ -7,14 +7,13 @@
 
 #include "AbilitySystem/TanksterAbilitySet.h"
 #include "AbilitySystem/TanksterAbilitySystemComponent.h"
-#include "AbilitySystem/TanksterGameplayAbility.h"
 #include "AbilitySystem/AttributeSets/AmmoAttributeSet.h"
 #include "AbilitySystem/AttributeSets/HealthAttributeSet.h"
+#include "AbilitySystem/GameplayAbilities/PredictMovementAbility.h"
+#include "Actors/EnemyTower.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CherryObjectiveComponent.h"
-#include "Components/FireProjectileComponent.h"
 #include "Components/HandleDamageComponent.h"
-#include "Components/HealthComponent.h"
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/TankMovementComponent.h"
@@ -41,18 +40,12 @@ ATankBase::ATankBase()
 	if(!ensure(IsValid(Camera))) return;
 	TankMovement = CreateDefaultSubobject<UTankMovementComponent>("TankMovement");
 	if(!ensure(IsValid(TankMovement))) return;
-	FireProjectileComponent = CreateDefaultSubobject<UFireProjectileComponent>("FireProjectileComponent");
-	if(!ensure(IsValid(FireProjectileComponent))) return;
 	ProjectileOriginComponent = CreateDefaultSubobject<UProjectileOriginComponent>("ProjectileOrigin");
 	if(!ensure(IsValid(ProjectileOriginComponent))) return;
-	HealthComponent = CreateDefaultSubobject<UHealthComponent>("HealthComponent");
-	if(!ensure(IsValid(HealthComponent))) return;
 	HandleDamageComponent = CreateDefaultSubobject<UHandleDamageComponent>("HandleDamageComponent");
 	if(!ensure(IsValid(HandleDamageComponent))) return;
 	CherryObjectiveComponent = CreateDefaultSubobject<UCherryObjectiveComponent>("CherryObjectiveComponent");
 	if(!ensure(IsValid(CherryObjectiveComponent))) return;
-	CollectPickupComponent = CreateDefaultSubobject<UCollectPickupComponent>("CollectPickupComponent");
-	if(!ensure(IsValid(CollectPickupComponent))) return;
 	
 	SetRootComponent(Sphere);
 	Body->SetupAttachment(Sphere);
@@ -74,7 +67,7 @@ ATankBase::ATankBase()
 	HandleDamageComponent->bModifyDamageOnLeft = true;
 	HandleDamageComponent->MultiplierLeftHit = 2.0f;
 
-	HealthComponent->SetMaxHealth(6.0f);
+
 }
 
 
@@ -88,10 +81,7 @@ void ATankBase::BeginPlay()
 	{
 		Head->SetWorldRotation(FRotator(Head->GetComponentRotation().Pitch, GetActorRotation().Yaw, 0.0f));
 	}
-	if(IsValid(HealthComponent))
-	{
-		HealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnActorDied);
-	}
+
 }
 
 void ATankBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -162,26 +152,27 @@ void ATankBase::ClearVelocity() const
 // 	}
 // }
 
-void ATankBase::RequestFire()
-{
-	if(IsValid(Head) && IsValid(Controller) && IsValid(FireProjectileComponent))
-	{
-		if(FireProjectileComponent->TryFireProjectile(this))
-		{
-			// Body->GetAnimInstance()->Montage_Play(FireMontage);
-		}
-		// const FVector StartLocation = Head->GetComponentLocation();
-		// constexpr float Distance =  1000.0f;
-		// const FVector EndLocation = StartLocation + Head->GetForwardVector() * Distance;
-		// DrawDebugSphere(GetWorld(), EndLocation, 10.0f, 10.0f,  FColor::Red, false, 5.0f);
-		// DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Orange, false, 5.0f, 0.0f, 2.0f);
-	}
-}
 
 void ATankBase::OnActorDied(TWeakObjectPtr<AController> DamageInstigator)
 {
 	ClearVelocity();
 }
+
+void ATankBase::SetMovementPredictionAbility(const TWeakObjectPtr<UPredictMovementAbility> InAbility, bool bRotated)
+{
+	if(InAbility.IsValid())
+	{
+		if(bRotated)
+		{
+			PredictRotatedLocationAbility = InAbility;
+		}
+		else
+		{
+			PredictLocationAbility = InAbility;
+		}
+	}
+}
+
 TWeakObjectPtr<USphereComponent> ATankBase::GetSphere() const
 {
 	return Sphere;
@@ -212,10 +203,22 @@ TWeakObjectPtr<UTankMovementComponent> ATankBase::GetTankMovement() const
 	return TankMovement;
 }
 
-TWeakObjectPtr<UFireProjectileComponent> ATankBase::GetFireProjectileComponent() const
+FVector ATankBase::GetPredictedLocation(const float& Time, const bool bRotated) const
 {
-	return FireProjectileComponent;
+	if(PredictLocationAbility.IsValid() && PredictRotatedLocationAbility.IsValid())
+	{
+		if(bRotated)
+		{
+			return PredictRotatedLocationAbility->GetPredictedLocationForTime(Time);
+		}
+		else
+		{
+			return PredictLocationAbility->GetPredictedLocationForTime(Time);
+		}
+	}
+	return GetActorLocation();
 }
+
 
 EDrivingState ATankBase::GetCurrentDrivingState() const
 {
@@ -275,33 +278,6 @@ bool ATankBase::GetIsSliding() const
 		return TankMovement->GetIsSliding();
 	}
 	return false;
-}
-
-bool ATankBase::GetHasEndlessAmmo() const
-{
-	if(IsValid(FireProjectileComponent))
-	{
-		return FireProjectileComponent->GetHasEndlessAmmo();
-	}
-	return false;
-}
-
-int32 ATankBase::GetCurrentAmmo() const
-{
-	if(IsValid(FireProjectileComponent))
-	{
-		return FireProjectileComponent->GetCurrentAmmo();
-	}
-	return 0;
-}
-
-int32 ATankBase::GetMaxAmmoDEPRECATEd() const
-{
-	if(IsValid(FireProjectileComponent))
-	{
-		return FireProjectileComponent->GetMaxAmmo();
-	}
-	return 0;
 }
 
 FString ATankBase::GetBodyName() const

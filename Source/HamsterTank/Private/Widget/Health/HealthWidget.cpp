@@ -76,7 +76,7 @@ void UHealthWidget::UpdateMaxHealth(const int32 NewMaxHealth)
 		if(NewWidget != nullptr)
 		{
 			NewWidget->SetHealthState(EHealthState::Empty);
-			HealthWidgets.Add(NewWidget);
+			HealthWidgets.Insert(NewWidget, 0);
 		}
 	}
 	while (Index < NewMaxHealth);
@@ -88,8 +88,8 @@ void UHealthWidget::UpdateHealth(int32 NewHealth)
 	{
 		return;
 	}
-	int32 Index = 0;
-
+	int Index = 0;
+	
 	for (const auto Element : HealthWidgets)
 	{
 		
@@ -102,19 +102,22 @@ void UHealthWidget::UpdateHealth(int32 NewHealth)
 		
 		if(Index <= NewHealth)
 		{
-			if(Index % 2 <= 0)
+			if(Index + 1 > NewHealth)
 			{
-				Element->SetHealthState(EHealthState::Full);
-			}
-			else if(Index + 1 > NewHealth)
-			{
+				
 				Element->SetHealthState(EHealthState::Half);
+			}
+			else
+			{
+				
+				Element->SetHealthState(EHealthState::Full);
 			}
 		}
 		else
 		{
+			
 			Element->SetHealthState(EHealthState::Empty);
 		}
-		Index++;
+		Index ++;
 	}
 }

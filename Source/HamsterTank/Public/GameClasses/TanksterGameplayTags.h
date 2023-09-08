@@ -31,6 +31,21 @@ public:
 	// FGameplayTag Gameplay_AbilityInputBlocked;
 	// FGameplayTag Gameplay_NativeInputBlocked;
 	// FGameplayTag Gameplay_AllInputBlocked;
+	FGameplayTag Damage;
+	FGameplayTag Dead;
+
+	FGameplayTag Hit_Right;
+	FGameplayTag Hit_Left;
+	FGameplayTag Hit_Front;
+	FGameplayTag Hit_Back;
+	FGameplayTag Hit_DirectionImmune;
+
+	FGameplayTag Immortal;
+	
+	FGameplayTag Target_Predict_Location;
+	FGameplayTag Target_Predict_All;
+
+	FGameplayTag Cooldown_FireProjectile;
 
 protected:
 

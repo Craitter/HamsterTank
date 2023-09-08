@@ -5,11 +5,13 @@
 #include "Actors/PickupActor.h"
 
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "AbilitySystem/TanksterGameplayEffect.h"
 
 #include "Components/CapsuleComponent.h"
-#include "Components/CollectPickupComponent.h"
 #include "HamsterTank/HamsterTank.h"
 
 class UCollectPickupComponent;
@@ -25,14 +27,22 @@ APickupActor::APickupActor()
 	if(!ensure(IsValid(PickupParticle))) return;
 
 	SetRootComponent(CapsuleCollider);
-	CapsuleCollider->SetCapsuleHalfHeight(80.0f);
-	CapsuleCollider->SetCapsuleRadius(75.0f);
+	CapsuleCollider->SetCapsuleHalfHeight(12.0f);
+	CapsuleCollider->SetCapsuleRadius(11.0f);
 	CapsuleCollider->SetCollisionProfileName(FName("OverlapOnlyPawn"));
 	PickupParticle->SetupAttachment(CapsuleCollider);
 	
-	const ConstructorHelpers::FObjectFinder<UDataTable> Pickup_Table(TEXT("/Game/Actors/Pickup/Pickups"));
-	PickupTable = Pickup_Table.Object;
-	if(!ensure(IsValid(PickupTable))) return;
+	const ConstructorHelpers::FObjectFinder<UPickupData> PDCommon(TEXT("/Game/Actors/Pickup/BackingData/PD_Common"));
+	PickupMap.Add(EPickupRarity::Common, PDCommon.Object);
+
+	const ConstructorHelpers::FObjectFinder<UPickupData> PDRare(TEXT("/Game/Actors/Pickup/BackingData/PD_Rare"));
+	PickupMap.Add(EPickupRarity::Rare, PDRare.Object);
+
+	const ConstructorHelpers::FObjectFinder<UPickupData> PDVeryRare(TEXT("/Game/Actors/Pickup/BackingData/PD_VeryRare"));
+	PickupMap.Add(EPickupRarity::VeryRare, PDVeryRare.Object);
+
+	const ConstructorHelpers::FObjectFinder<UPickupData> PDLegendary(TEXT("/Game/Actors/Pickup/BackingData/PD_Legendary"));
+	PickupMap.Add(EPickupRarity::Legendary, PDLegendary.Object);
 }
 
 bool APickupActor::HasBeenCollected() const
@@ -43,10 +53,10 @@ bool APickupActor::HasBeenCollected() const
 void APickupActor::SetCollected()
 {
 	bHasBeenCollected = true;
-	if(IsValid(PickupParticle))
+	if(IsValid(PickupParticle) && PickupData != nullptr)
 	{
 		PickupParticle->Deactivate();
-		PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, CurrentPickupData.PickupNiagara, GetActorLocation(), GetActorRotation(), FVector(DEFAULT_PAWN_SCALE));
+		PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, PickupData->PickupNiagara, GetActorLocation(), GetActorRotation(), FVector(DEFAULT_PAWN_SCALE));
 		PickupParticle->OnSystemFinished.AddDynamic(this, &ThisClass::OnNiagaraFinished);
 	}
 	// if(IsValid(CurrentPickupData.PickupSound))
@@ -60,38 +70,7 @@ void APickupActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if(IsValid(PickupTable))
-	{
-		TArray<FPickupData*> Pickups;
-		PickupTable->GetAllRows<FPickupData>(FString(), Pickups);
-
-
-		const float RandomNumber = FMath::FRandRange(0.1f, 100.0f);
-		for (const auto Pickup : Pickups)
-		{
-			if(Pickup != nullptr)
-			{
-				if(DefinedType == Pickup->Type)
-				{
-					PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, Pickup->DefaultNiagara, GetActorLocation());
-					PickupEndParticle = Pickup->PickupNiagara;
-					CurrentPickupData = *Pickup;
-					break;
-				}
-				if(DefinedType == None && RandomNumber > Pickup->ProbabilityMin && RandomNumber < Pickup->ProbabilityMax)
-				{
-					PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, Pickup->DefaultNiagara, GetActorLocation());
-					PickupEndParticle = Pickup->PickupNiagara;
-					CurrentPickupData = *Pickup;
-					break;
-				}
-			}
-		}
-	}
-	if(CurrentPickupData.Type == Nothing)
-	{
-		Destroy();
-	}
+	InitializePickup();
 
 	if(IsValid(CapsuleCollider))
 	{
@@ -118,10 +97,23 @@ void APickupActor::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedCompon
 	}
 	if(IsValid(OtherActor) && OtherActor != this)
 	{
-		const TWeakObjectPtr<UCollectPickupComponent> PickupComponent = OtherActor->FindComponentByClass<UCollectPickupComponent>();
-		if(PickupComponent.IsValid())
+		if(PickupData != nullptr)
 		{
-			PickupComponent->CollectPickup(CurrentPickupData, this);
+			IAbilitySystemInterface* IAB = Cast<IAbilitySystemInterface>(OtherActor);
+			if(IAB != nullptr)
+			{
+				const TWeakObjectPtr<UAbilitySystemComponent> TargetASC = Cast<UAbilitySystemComponent>(IAB);
+				if(TargetASC.IsValid() && PickupData->PickupGameplayEffect != nullptr)
+				{
+					FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
+					ContextHandle.AddInstigator(GetOwner(), this);
+					const FActiveGameplayEffectHandle ActiveGameplayEffectHandle = TargetASC->ApplyGameplayEffectToSelf(PickupData->PickupGameplayEffect, 1.0f, ContextHandle);
+					if(ActiveGameplayEffectHandle.WasSuccessfullyApplied())
+					{
+						SetCollected();
+					}
+				}
+			}
 		}
 	}
 }
@@ -133,5 +125,29 @@ void APickupActor::OnNiagaraFinished(UNiagaraComponent* FinishedSystem)
 		FinishedSystem->Deactivate();
 	}
 	Destroy();
+}
+
+void APickupActor::SetActivePickup(FPickupData_Backend* InPickupData)
+{
+	if(InPickupData != nullptr)
+	{
+		PickupParticle = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, InPickupData->DefaultNiagara, GetActorLocation());
+		PickupData = InPickupData;
+	}
+}
+
+void APickupActor::InitializePickup()
+{
+	for (const auto& Data : PickupMap)
+	{
+		if(Data.Key == PickupRarity)
+		{
+			if(IsValid(Data.Value))
+			{
+				SetActivePickup(Data.Value->ChoosePickup());
+			}
+			break;
+		}
+	}
 }
 

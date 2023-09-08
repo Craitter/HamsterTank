@@ -32,14 +32,5 @@ TWeakObjectPtr<AController> UCherryObjectiveComponent::GetOwningController() con
 	return OwningPawn->GetController();
 }
 
-void UCherryObjectiveComponent::OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup)
-{
-	if(Type != Cherry || !CollectedPickup.IsValid() || CollectedPickup->HasBeenCollected())
-	{
-		return;
-	}
-	CollectedPickup->SetCollected();
-}
-
 
 

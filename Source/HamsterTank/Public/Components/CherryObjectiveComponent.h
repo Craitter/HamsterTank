@@ -4,14 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Interface/CollectPickupInterface.h"
 #include "CherryObjectiveComponent.generated.h"
 
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCherryCountChangedDelegate, float)
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class HAMSTERTANK_API UCherryObjectiveComponent : public UActorComponent, public ICollectPickupInterface
+class HAMSTERTANK_API UCherryObjectiveComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -24,7 +23,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	TWeakObjectPtr<AController> GetOwningController() const;
-	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup) override;
 public:
 
 private:

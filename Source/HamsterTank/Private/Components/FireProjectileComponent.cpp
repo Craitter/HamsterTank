@@ -129,16 +129,6 @@ void UFireProjectileComponent::BeginPlay()
 	
 }
 
-void UFireProjectileComponent::OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup)
-{
-	if(Type != Ammo || !CollectedPickup.IsValid() || CollectedPickup->HasBeenCollected() || CurrentAmmo >= MaxAmmo)
-	{
-		return;
-	}
-	CollectedPickup->SetCollected();
-	AddAmmoDelta(Amount);
-}
-
 bool UFireProjectileComponent::GetHasEndlessAmmo() const
 {
 	return bHasEndlessAmmo;

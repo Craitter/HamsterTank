@@ -10,10 +10,10 @@
 #include "AbilitySystem/AttributeSets/AmmoAttributeSet.h"
 #include "AbilitySystem/AttributeSets/HealthAttributeSet.h"
 #include "Actors/PickupActor.h"
+#include "Actors/TankBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/FireProjectileComponent.h"
 #include "Components/HandleDamageComponent.h"
-#include "Components/HealthComponent.h"
 #include "Components/ProjectileOriginComponent.h"
 #include "Components/TankMovementComponent.h"
 #include "Engine/StaticMeshActor.h"
@@ -46,8 +46,6 @@ AEnemyTower::AEnemyTower()
 	if(!ensure(IsValid(FireProjectileComponent))) return;
 	ProjectileOrigin = CreateDefaultSubobject<UProjectileOriginComponent>("ProjectileOrigin");
 	if(!ensure(IsValid(ProjectileOrigin))) return;
-	HealthComponent = CreateDefaultSubobject<UHealthComponent>("HealthComponent");
-	if(!ensure(IsValid(HealthComponent))) return;
 	HandleDamageComponent = CreateDefaultSubobject<UHandleDamageComponent>("HandleDamageComponent");
 	if(!ensure(IsValid(HandleDamageComponent))) return;
 	AnimSkeleton = CreateDefaultSubobject<USkeletalMeshComponent>("AnimSkeleton");
@@ -56,8 +54,6 @@ AEnemyTower::AEnemyTower()
 	if(!ensure(IsValid(TanksterAbilitySystem))) return;
 	HealthAttributeSet = CreateDefaultSubobject<UHealthAttributeSet>("HealthAttributeSet");
 	if(!ensure(IsValid(HealthAttributeSet))) return;
-	AmmoAttributeSet = CreateDefaultSubobject<UAmmoAttributeSet>("AmmoAttributeSet");
-	if(!ensure(IsValid(AmmoAttributeSet))) return;
 	
 	SetRootComponent(CapsuleCollider);
 	TowerBase->SetupAttachment(CapsuleCollider);
@@ -70,7 +66,6 @@ AEnemyTower::AEnemyTower()
 	AnimSkeleton->SetRelativeScale3D(FVector(DEFAULT_PAWN_SCALE));
 	AnimSkeleton->PrimaryComponentTick.bCanEverTick = true;
 
-	HealthComponent->SetMaxHealth(2.0f); //explain
 	
 	FFireProjectileData NewDefault;
 	NewDefault.bApplyCooldown = true;
@@ -135,11 +130,7 @@ void AEnemyTower::BeginPlay()
 		InternOriginLocation = TowerHead->GetComponentLocation();
 		InternOriginLocation.Z = ProjectileOrigin->GetComponentLocation().Z;
 	}
-
-	if(IsValid(HealthComponent))
-	{
-		HealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnDeath); //unbind
-	}
+	
 
 	if(IsValid(TanksterAbilitySystem))
 	{
@@ -151,13 +142,7 @@ void AEnemyTower::BeginPlay()
 			HealthChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetHealthAttribute()).AddUObject(this, &ThisClass::HealthChanged);
 			MaxHealthChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetMaxHealthAttribute()).AddUObject(this, &ThisClass::MaxHealthChanged);
 		}
-		if(IsValid(AmmoAttributeSet))
-		{
-			//Begin Binding Delegates On AmmoAttributeValueChanged
-			AmmoChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetAmmoAttribute()).AddUObject(this, &ThisClass::AmmoChanged);
-			MaxAmmoChangedDelegateHandle = TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetMaxAmmoAttribute()).AddUObject(this, &ThisClass::MaxAmmoChanged);
-			//End Binding Delegates On AmmoAttributeValueChanged
-		}
+		
 		if(IsValid(InitialAbilitySet))
 		{
 			InitialAbilitySet->GiveToAbilitySystem(TanksterAbilitySystem, &GrantedHandles, this);
@@ -167,10 +152,7 @@ void AEnemyTower::BeginPlay()
 
 void AEnemyTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if(IsValid(HealthComponent))
-	{
-		HealthComponent->OnDeathDelegateHandle.RemoveAll(this);
-	}
+	
 	OnSinRotationFinishedDelegateHandle.Unbind();
 	OnPlayerFoundDelegateHandle.Unbind();
 
@@ -185,19 +167,10 @@ void AEnemyTower::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			//End Remove Binding Delegates On HealthAttributeValueChanged
 		}
 		
-		if(IsValid(AmmoAttributeSet))
-		{
-			//Begin Remove Binding Delegates On AmmoAttributeValueChanged
-			TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetAmmoAttribute()).Remove(AmmoChangedDelegateHandle);
-			TanksterAbilitySystem->GetGameplayAttributeValueChangeDelegate(AmmoAttributeSet->GetMaxAmmoAttribute()).Remove(MaxAmmoChangedDelegateHandle);
-			//End Remove Binding Delegates On AmmoAttributeValueChanged
-		}
 		
 	}
 	HealthChangedDelegateHandle.Reset();
 	MaxHealthChangedDelegateHandle.Reset();
-	AmmoChangedDelegateHandle.Reset();
-	MaxAmmoChangedDelegateHandle.Reset();
 	
 	Super::EndPlay(EndPlayReason);
 }
@@ -282,10 +255,7 @@ void AEnemyTower::Tick(float DeltaTime)
 
 bool AEnemyTower::IsAlive() const
 {
-	if(IsValid(HealthComponent))
-	{
-		return HealthComponent->IsAlive();
-	}
+	
 	return false;
 }
 
@@ -437,13 +407,8 @@ bool AEnemyTower::IsTargetAlive() const
 
 bool AEnemyTower::IsTargetAlive(TWeakObjectPtr<APawn> InTargetPawn)
 {
-	if(!InTargetPawn.IsValid())
-	{
-		return false;
-	}
-	const TWeakObjectPtr<UHealthComponent> PawnHealthComponent = InTargetPawn->FindComponentByClass<UHealthComponent>(); //Delegate
-	return !PawnHealthComponent.IsValid() || PawnHealthComponent->IsAlive();
-	
+	const TWeakObjectPtr<ATankBase> TargetTank = Cast<ATankBase>(InTargetPawn);
+	return TargetTank.IsValid() && TargetTank->IsAlive();
 }
 
 float AEnemyTower::GetMaxRange() const
@@ -497,7 +462,6 @@ bool AEnemyTower::IsDirectionInFOV(const FVector& Direction) const
 	{
 		return false;
 	}
-	//Todo: Make Radians to improve performance
 	const float RadiansDistance = acos(TowerHead->GetForwardVector().Dot(Direction));
 	return RadiansDistance < FOVRadians;
 }
@@ -546,14 +510,14 @@ float AEnemyTower::GetDesiredProjectileTravelTime(const FVector& Location) const
 	
 }
 
-void AEnemyTower::RotateTowerSin(const float AverageDegreePerSecond, const float DeltaTime)
+void AEnemyTower::RotateTowerSin(const float InAverageDegreePerSecond, const float DeltaTime)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(EnemyTower::RotateTowerSin);
 	if(IsValid(TowerHead))
 	{
 		CurrentTurningTime += DeltaTime;
 
-		const float TurningTime = SinDeltaDegree / AverageDegreePerSecond;
+		const float TurningTime = SinDeltaDegree / InAverageDegreePerSecond;
 		const float Alpha = FMath::Clamp<float>(CurrentTurningTime / TurningTime, 0.0f, 1.0f);
 		TowerHead->SetWorldRotation(FMath::InterpSinInOut(SinStartRotation, SinEndRotation, Alpha));
 	
@@ -616,12 +580,9 @@ void AEnemyTower::MaxHealthChanged(const FOnAttributeChangeData& Data)
 {
 }
 
-void AEnemyTower::AmmoChanged(const FOnAttributeChangeData& Data)
+TWeakObjectPtr<UStaticMeshComponent> AEnemyTower::GetTowerHead()
 {
-}
-
-void AEnemyTower::MaxAmmoChanged(const FOnAttributeChangeData& Data)
-{
+	return TowerHead;
 }
 
 float AEnemyTower::GetHealth() const
@@ -642,23 +603,6 @@ float AEnemyTower::GetMaxHealth() const
 	return 0.0f;
 }
 
-float AEnemyTower::GetAmmo() const
-{
-	if(IsValid(AmmoAttributeSet))
-	{
-		return AmmoAttributeSet->GetAmmo();
-	}
-	return 0.0f;
-}
-
-float AEnemyTower::GetMaxAmmo() const
-{
-	if(IsValid(AmmoAttributeSet))
-	{
-		return AmmoAttributeSet->GetMaxAmmo();
-	}
-	return 0.0f;
-}
 
 UAbilitySystemComponent* AEnemyTower::GetAbilitySystemComponent() const
 {
@@ -670,10 +614,6 @@ TWeakObjectPtr<UHealthAttributeSet> AEnemyTower::GetHealthAttributeSet() const
 	return HealthAttributeSet;
 }
 
-TWeakObjectPtr<UAmmoAttributeSet> AEnemyTower::GetAmmoAttributeSet() const
-{
-	return AmmoAttributeSet;
-}
 
 bool AEnemyTower::IsAimTargetLocationValid(const FVector& AimTargetLocation) const
 {

@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "ProjectileOriginComponent.h"
+#include "Actors/PickupActor.h"
 #include "Components/ActorComponent.h"
-#include "Interface/CollectPickupInterface.h"
 #include "FireProjectileComponent.generated.h"
 
 
+enum class EPickupRarity;
 class APawn;
 class AProjectileBase;
 
@@ -18,7 +19,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnAmmoChanged, int32);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMaxAmmoChanged, int32 /* MaxAmmo*/, int32 /* CurrentAmmo*/);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class HAMSTERTANK_API UFireProjectileComponent : public UActorComponent, public ICollectPickupInterface
+class HAMSTERTANK_API UFireProjectileComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -32,7 +33,6 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 public:
-	virtual void OnPickupCollected(const EPickupType& Type, const float& Amount, TWeakObjectPtr<APickupActor> CollectedPickup) override;
 	
 	// UFUNCTION(BlueprintCallable, Category = "Firing")
 	AProjectileBase* TryFireProjectile(APawn* InstigatorPawn, const FFireProjectileData& FireData);
@@ -84,6 +84,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "FireProjectile|Ammo")
 	bool bHasEndlessAmmo = false;
+
 	
 
 	UPROPERTY(EditAnywhere, Category = "FireProjectile|Data")

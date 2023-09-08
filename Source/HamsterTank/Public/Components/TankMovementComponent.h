@@ -128,15 +128,21 @@ private:
 	
 
 	//Calculate Velocity Begin
-	FVector GetAirResistance(const FVector& InVelocity) const;
-	FVector GetRollingResistance(const FVector& InVelocity) const;
-	float GetMinTurningRadius(float Speed) const;
+	
+	
 	void ComputeVelocity(const float InDeltaTime, FVector& InVelocity) const;
 	//Calculate Velocity End
 
 	//Adjust VelocityRotation
 	void ProcessUserDesiredRotation(float InDeltaTime);
 public: //Simple Getters;
+
+	FVector GetAirResistance(const FVector& InVelocity) const;
+	FVector GetRollingResistance(const FVector& InVelocity) const;
+	float GetMinTurningRadius(float Speed) const;
+	float GetMass() const;
+	float GetCurrentDrivingForce() const;
+	
 	UFUNCTION(BlueprintCallable, Category = "TankMovement")
 	EDrivingState GetCurrentDrivingState() const;
 	UFUNCTION(BlueprintCallable, Category = "TankMovement")

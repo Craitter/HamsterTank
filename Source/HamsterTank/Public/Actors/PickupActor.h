@@ -3,56 +3,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DataCollections/PickupData.h"
 #include "Engine/DataTable.h"
 #include "GameFramework/Actor.h"
 #include "PickupActor.generated.h"
 
 
+enum EPickupType : uint8;
+class UPickupData;
 class USoundCue;
 class UCapsuleComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
 
 
-UENUM(BlueprintType)
-enum EPickupType : uint8
+UENUM()
+enum class EPickupRarity
 {
-	None = 0,
+	Common,
 
-	Nothing = 1,
-	
-	Heal = 2,
+	Rare,
 
-	Ammo = 3,
+	VeryRare,
 
-	Cherry = 4,
-};
-
-USTRUCT(BlueprintType)
-struct FPickupData : public FTableRowBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere)
-	TEnumAsByte<EPickupType> Type = None;
-
-	UPROPERTY(EditAnywhere)
-	float Amount = 0.0f;
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UNiagaraSystem> DefaultNiagara = {nullptr};
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UNiagaraSystem> PickupNiagara = {nullptr};
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<USoundCue> PickupSound = {nullptr};
-	
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "0", ClampMax = "100", ForceUnits = "Percentage"))
-	float ProbabilityMin = 1.0f; 
-	
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "0", ClampMax = "100", ForceUnits = "Percentage"))
-	float ProbabilityMax = 1.0f; 
+	Legendary,
 };
 
 UCLASS()
@@ -83,10 +57,14 @@ protected:
 	TObjectPtr<UNiagaraSystem> PickupEndParticle = {nullptr};
 
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UDataTable> PickupTable = {nullptr};
+	TEnumAsByte<EPickupType> Type = None;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TMap<EPickupRarity, TObjectPtr<UPickupData>> PickupMap;
 
-	UPROPERTY(EditInstanceOnly)
-	TEnumAsByte<EPickupType> DefinedType = None;
+	EPickupRarity PickupRarity = EPickupRarity::Common;
+
+	FPickupData_Backend* PickupData = {nullptr};
 public:
 	
 	UFUNCTION()
@@ -95,8 +73,9 @@ public:
 	UFUNCTION()
 	void OnNiagaraFinished(UNiagaraComponent* FinishedSystem);
 private:
-	FPickupData CurrentPickupData;
-
+	void SetActivePickup(FPickupData_Backend* InPickupData);
+	
+	void InitializePickup();
 	bool bHasBeenCollected = false;
 	
 };

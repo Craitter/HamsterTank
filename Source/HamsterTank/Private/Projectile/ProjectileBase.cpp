@@ -4,12 +4,16 @@
 
 #include "Projectile/ProjectileBase.h"
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "AbilitySystem/TanksterGameplayEffect.h"
 #include "Engine/DamageEvents.h"
 
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
+#include "HamsterTank/HamsterTank.h"
 #include "Projectile/TankProjectileMovementComponent.h"
 
 
@@ -37,8 +41,7 @@ AProjectileBase::AProjectileBase()
 void AProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	OnTakeAnyDamage.AddDynamic(this, &ThisClass::OnActorTakeAnyDamage);
+	
 	if(IsValid(Sphere))
 	{
 		// UE_LOG(LogTemp, Warning , TEXT("first %s"), *GetName());
@@ -48,75 +51,74 @@ void AProjectileBase::BeginPlay()
 	{
 		ProjectileMovement->OnProjectileStop.AddDynamic(this, &ThisClass::OnProjectileHit);
 	}
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireEffect, GetActorLocation(), GetActorRotation(), FVector(1.0f/7.0f), true, true, ENCPoolMethod::None);
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireEffect, GetActorLocation(), GetActorRotation(), FVector(DEFAULT_PAWN_SCALE), true, true, ENCPoolMethod::None);
 }
 
-float AProjectileBase::ComputeDamage()
-{
-	return BaseDamage;
-}
 
-void AProjectileBase::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+
+void AProjectileBase::OnProjectileHit(const FHitResult& HitResult)
 {
-	
-	if(IsValid(OtherActor) && OtherActor != this && OtherActor != GetOwner())
+	if(!EffectToApply.IsValid())
 	{
-		FHitResult Result = SweepResult;
-		if(SweepResult.GetActor() == this)
-		{
-			Result = FHitResult(OtherActor, nullptr, GetActorLocation(), GetActorForwardVector() * -1);
-		}		
-		OnProjectileHit(Result);
-	}
-}
-
-
-void AProjectileBase::OnProjectileHit(const FHitResult& Result)
-{
-	if(Result.GetActor() == this)
-	{
+		bDestroyWhenReceivedEffect = true;
+		CachedResult = HitResult;
+		SetLifeSpan(0.1f);
 		return;
 	}
-//Visual Changes
-	FRotator HitEffectRotation = FRotator::ZeroRotator;
-	if(!bUseZeroRotationOnHit)
+	
+	const IAbilitySystemInterface* IAB = Cast<IAbilitySystemInterface>(HitResult.GetActor());
+	if(IAB != nullptr && IAB->GetAbilitySystemComponent() != nullptr)
 	{
-		HitEffectRotation = FRotationMatrix::MakeFromX(Result.ImpactNormal).Rotator();
+		const TWeakObjectPtr<UAbilitySystemComponent> TargetASC = IAB->GetAbilitySystemComponent();
+			
+		EffectToApply.Data.Get()->GetContext().AddHitResult(HitResult);
+		TargetASC->ApplyGameplayEffectSpecToTarget(*EffectToApply.Data, TargetASC.Get());
+		Destroy();
 	}
-	FVector Location = Result.Location.IsNearlyZero() ? GetActorLocation() : Result.ImpactPoint;
+	else
+	{
+		if(IsValid(HitResult.GetActor()) && HitResult.GetActor()->IsA(StaticClass()))
+		{
+			HitResult.GetActor()->Destroy();
+		}
+		Destroy();
+	}
+}
 
+void AProjectileBase::Destroyed()
+{
 	// TWeakObjectPtr<UNiagaraComponent> RuntimeHitEffect =
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, Location, HitEffectRotation,
-		FVector(1.0f/7.0f), true, true, ENCPoolMethod::None);
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, GetActorLocation(), GetActorRotation(),
+		FVector(DEFAULT_PAWN_SCALE), true, true, ENCPoolMethod::None);
 	if(IsValid(PointLight))
 	{
 		PointLight->SetIntensity(0.0f);
 	}
-
-	FPointDamageEvent PointDamageEvent;
-	PointDamageEvent.HitInfo = Result;
-	PointDamageEvent.Damage = BaseDamage;
-	PointDamageEvent.ShotDirection = GetActorForwardVector();
-	
-	//Apply "Damage"
-	if(IsValid(Result.GetActor()))
-	{
-		Result.GetActor()->TakeDamage(ComputeDamage(), PointDamageEvent, GetInstigatorController(), GetInstigator());
-	}
-	Destroy();
+	Super::Destroyed();
 }
 
-void AProjectileBase::OnActorTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-	AController* InstigatedBy, AActor* DamageCauser)
+void AProjectileBase::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                              UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	bUseZeroRotationOnHit = true;
-	FHitResult Result;
-	Result.Location = FVector::ZeroVector;
-	OnProjectileHit(Result);
+	
+	if(IsValid(OtherActor) && OtherActor != this && OtherActor != GetOwner())
+	{
+		const FHitResult Result = FHitResult(OtherActor, nullptr, GetActorLocation(), GetActorForwardVector() * -1);
+
+		OnProjectileHit(Result);
+	}
 }
 
-TWeakObjectPtr<UTankProjectileMovementComponent> AProjectileBase::GetProjectileMovementComponent()
+void AProjectileBase::SetEffectToApplyToTarget(FGameplayEffectSpecHandle SpecHandle)
+{
+	EffectToApply = SpecHandle;
+	if(bDestroyWhenReceivedEffect)
+	{
+		OnProjectileHit(CachedResult);
+	}
+}
+
+TWeakObjectPtr<UTankProjectileMovementComponent> AProjectileBase::GetProjectileMovementComponent() const
 {
 	return ProjectileMovement;
 }

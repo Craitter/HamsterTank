@@ -420,6 +420,16 @@ float UTankMovementComponent::GetMinTurningRadius(float Speed) const
 	}
 }
 
+float UTankMovementComponent::GetMass() const
+{
+	return Mass;
+}
+
+float UTankMovementComponent::GetCurrentDrivingForce() const
+{
+	return CurrentDrivingForce;
+}
+
 void UTankMovementComponent::ProcessUserDesiredRotation(float InDeltaTime)
 {
 	FQuat RotationDelta;

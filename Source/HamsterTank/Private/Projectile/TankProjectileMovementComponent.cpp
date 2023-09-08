@@ -14,7 +14,7 @@ UTankProjectileMovementComponent::UTankProjectileMovementComponent()
 	bComponentShouldUpdatePhysicsVolume = false;
 
 	bRotationFollowsVelocity = true;
-	InitialSpeed = 1100.0f;
+	InitialSpeed = 157.142853f;
 	MaxSpeed = 0.0f;
 }
 

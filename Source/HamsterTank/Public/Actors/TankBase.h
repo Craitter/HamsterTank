@@ -8,6 +8,8 @@
 #include "GameFramework/Pawn.h"
 #include "TankBase.generated.h"
 
+class UPredictMovementAbility;
+enum class ETowerType : uint8;
 struct FTanksterAbilitySet_GrantedHandles;
 class UTanksterAbilitySet;
 struct FGameplayAbilitySpecHandle;
@@ -21,7 +23,6 @@ class UCherryObjectiveComponent;
 class UCollectPickupComponent;
 struct FPickupData;
 class UHandleDamageComponent;
-class UHealthComponent;
 class UProjectileOriginComponent;
 class UFireProjectileComponent;
 enum class EDrivingState : uint8;
@@ -33,7 +34,7 @@ class UBoxComponent;
 class UCameraComponent;
 class USpringArmComponent;
 
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHitDirection, FVector2D, HitDirection);
 
 
 UCLASS()
@@ -46,12 +47,18 @@ public:
 	ATankBase();
 
 
+	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void PossessedBy(AController* NewController) override;
 	
 	void ClearVelocity() const;
+	
+	UPROPERTY(BlueprintAssignable, Category = "Tank|Animation")
+	FOnHitDirection OnHitDirection;
+
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -79,19 +86,10 @@ protected:
 	TObjectPtr<UTankMovementComponent> TankMovement = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<UFireProjectileComponent> FireProjectileComponent = {nullptr};
-
-	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UProjectileOriginComponent> ProjectileOriginComponent = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<UHealthComponent> HealthComponent = {nullptr};
-
-	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UHandleDamageComponent> HandleDamageComponent = {nullptr};
-
-	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<UCollectPickupComponent> CollectPickupComponent = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UCherryObjectiveComponent> CherryObjectiveComponent = {nullptr};
@@ -101,17 +99,20 @@ protected:
 
 
 public:	
-	// void RequestAimAtTarget(const FVector& TargetLocation);
-	void RequestFire();
 
 	void OnActorDied(TWeakObjectPtr<AController> DamageInstigator);
 
+	void SetMovementPredictionAbility(const TWeakObjectPtr<UPredictMovementAbility> InAbility, bool bRotated);
 private:
 	//InternValue
 	// FVector DesiredTowerAimLocation = FVector::ZeroVector;
 	TWeakObjectPtr<UTanksterAbilitySystemComponent> TanksterAbilitySystem = {nullptr};
 	TWeakObjectPtr<UHealthAttributeSet> HealthAttributeSet = {nullptr};
 	TWeakObjectPtr<UAmmoAttributeSet> AmmoAttributeSet = {nullptr};
+
+	TWeakObjectPtr<UPredictMovementAbility> PredictRotatedLocationAbility = {nullptr};
+	TWeakObjectPtr<UPredictMovementAbility> PredictLocationAbility = {nullptr};
+	
 
 public: //simple Getter Functions
 	TWeakObjectPtr<USphereComponent> GetSphere() const;
@@ -125,8 +126,8 @@ public: //simple Getter Functions
 	TWeakObjectPtr<UCameraComponent> GetCamera() const;
 
 	TWeakObjectPtr<UTankMovementComponent> GetTankMovement() const;
-
-	TWeakObjectPtr<UFireProjectileComponent> GetFireProjectileComponent() const;
+	
+	FVector GetPredictedLocation(const float& Time, bool bRotated) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Tank|Movement")
 	EDrivingState GetCurrentDrivingState() const;
@@ -143,12 +144,7 @@ public: //simple Getter Functions
 	bool GetIsSliding() const;
 	
 	
-	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
-	bool GetHasEndlessAmmo() const;
-	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
-	int32 GetCurrentAmmo() const;
-	UFUNCTION(BlueprintCallable, Category = "Tank|Firing")
-	int32 GetMaxAmmoDEPRECATEd() const;
+
 
 	UFUNCTION(BlueprintCallable, Category = "Tank|Body")
 	FString GetBodyName() const;

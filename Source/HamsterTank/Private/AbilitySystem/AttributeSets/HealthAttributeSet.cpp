@@ -5,6 +5,7 @@
 
 #include "GameplayEffectExtension.h"
 #include "Actors/TankBase.h"
+#include "GameClasses/TanksterGameplayTags.h"
 
 void UHealthAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
@@ -25,6 +26,9 @@ void UHealthAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 {
 	Super::PostGameplayEffectExecute(Data);
 
+	TWeakObjectPtr<UAbilitySystemComponent> OwnerASC = GetOwningAbilitySystemComponent();
+	TWeakObjectPtr<ATankBase> OwnerTank = Cast<ATankBase>(GetOwningActor());
+	
 	if(Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
@@ -37,8 +41,39 @@ void UHealthAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 		if(LocalDamage > 0.0f)
 		{
 			SetHealth(FMath::Clamp(GetHealth() - LocalDamage, 0.0f, GetMaxHealth()));
-
-
+		
+			const FTanksterGameplayTags& NativeTags = FTanksterGameplayTags::Get();
+			if(OwnerTank.IsValid())
+			{
+				FVector2D OutDirection;
+				for (auto& Element : Data.EffectSpec.GetDynamicAssetTags())
+				{
+					
+					if(NativeTags.Hit_Back == Element)
+					{
+						OutDirection = {-1.0f, 0.0f};
+					}
+					else if(NativeTags.Hit_Back == Element)
+					{
+						OutDirection = {1.0f, 0.0f};
+					}
+					else if(NativeTags.Hit_Back == Element)
+					{
+						OutDirection = {0.0f, -1.0f};
+					}
+					else if(NativeTags.Hit_Back == Element)
+					{
+						OutDirection = {0.0f, 1.0f};
+					}
+					if(!OutDirection.IsZero())
+					{
+						break;
+					}
+				}
+				OwnerTank->OnHitDirection.Broadcast(OutDirection);
+			}
+			
+			
 			// FGameplayEffectContextHandle Context = Data.EffectSpec.GetContext();
 			// UAbilitySystemComponent* Source = Context.GetOriginalInstigatorAbilitySystemComponent();
 			// const FGameplayTagContainer& SourceTags = *Data.EffectSpec.CapturedSourceTags.GetAggregatedTags();

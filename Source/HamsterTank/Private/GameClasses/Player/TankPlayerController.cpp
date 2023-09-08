@@ -8,7 +8,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "AbilitySystem/TanksterAbilitySystemComponent.h"
 #include "Actors/TankBase.h"
-#include "Components/HealthComponent.h"
 #include "GameClasses/TanksterGameplayTags.h"
 #include "Input/TanksterEnhancedInputComponent.h"
 
@@ -34,11 +33,7 @@ void ATankPlayerController::OnPossess(APawn* InPawn)
 	TankPawn = CastChecked<ATankBase>(InPawn);
 	if(TankPawn.IsValid())
 	{
-		const TWeakObjectPtr<UHealthComponent> PawnHealthComponent = TankPawn->FindComponentByClass<UHealthComponent>();
-		if(PawnHealthComponent.IsValid())
-		{
-			PawnHealthComponent->OnDeathDelegateHandle.AddUObject(this, &ThisClass::OnPlayerDied);
-		}
+		
 	}
 }
 	

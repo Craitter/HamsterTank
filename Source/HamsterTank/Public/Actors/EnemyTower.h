@@ -17,7 +17,6 @@ class UAmmoAttributeSet;
 class UHealthAttributeSet;
 class UTanksterAbilitySystemComponent;
 class UHandleDamageComponent;
-class UHealthComponent;
 class UCapsuleComponent;
 class UProjectileOriginComponent;
 class UFireProjectileComponent;
@@ -101,7 +100,21 @@ public:
 	// Sets default values for this actor's properties
 	AEnemyTower();
 
-protected:
+
+	UPROPERTY()
+	float AverageDegreePerSecond = 0.0f;
+	UPROPERTY()
+	float YawRotationRange = 0.0f;
+
+	UPROPERTY()
+	float LookForPlayerTimerRate = 0.0f;
+
+	UPROPERTY()
+	float LookForPlayerMaxRange = 0.0f;
+
+	UPROPERTY()
+	float LookforPlayerFOV;
+public:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -128,17 +141,12 @@ protected:
 	TObjectPtr<UProjectileOriginComponent> ProjectileOrigin = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<UHealthComponent> HealthComponent = {nullptr};
-
-	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UHandleDamageComponent> HandleDamageComponent = {nullptr};
 
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UTanksterAbilitySystemComponent> TanksterAbilitySystem = {nullptr};
 	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
 	TObjectPtr<UHealthAttributeSet> HealthAttributeSet = {nullptr};
-	UPROPERTY(VisibleAnywhere, Category = "Tank|EssentialComponents", BlueprintReadOnly)
-	TObjectPtr<UAmmoAttributeSet> AmmoAttributeSet = {nullptr};
 	
 	//This changes the min and max rotation on idle, ActorForwardVector +- IdleRotationRange/2	
 	UPROPERTY(EditAnywhere, Category = "Tower|Idle", meta = (ClampMin = "0", ClampMax = "360.0", Units = "Degrees"))
@@ -232,10 +240,10 @@ protected:
 	virtual bool ShouldSkipUpdate();
 	/**
 	 * @brief Rotates the Turret of The Tower from SinStartRotation to SinEndRotation at AverageDegreePerSecond with InterpSinInOut
-	 * @param AverageDegreePerSecond Used To Determine overall time depending on Start and End Rotation
+	 * @param InAverageDegreePerSecond Used To Determine overall time depending on Start and End Rotation
 	 * @param DeltaTime used to increase CurrentTurningTime
 	 */
-	void RotateTowerSin(const float AverageDegreePerSecond, const float DeltaTime);
+	void RotateTowerSin(const float InAverageDegreePerSecond, const float DeltaTime);
 	/**
 	 * @brief Depending On the FireType it will choose to calculate a fitting TargetLocation
 	 * @return The TargetLocation
@@ -271,22 +279,18 @@ protected:
 	virtual void MaxHealthChanged(const FOnAttributeChangeData& Data);
 	//End Health AttributeChangedCallbacks
 	
-	//Begin Ammo AttributeChangedCallbacks
-	virtual void AmmoChanged(const FOnAttributeChangeData& Data);
-	virtual void MaxAmmoChanged(const FOnAttributeChangeData& Data);
-	//End Ammo AttributeChangedCallbacks
+	
 
 	//Begin Health AttributeChangedDelegate
 	FDelegateHandle HealthChangedDelegateHandle;
 	FDelegateHandle MaxHealthChangedDelegateHandle;
 	//End Health AttributeChangedDelegate
 
-	//Begin Health AttributeChangedDelegate
-	FDelegateHandle AmmoChangedDelegateHandle;
-	FDelegateHandle MaxAmmoChangedDelegateHandle;
-	//End Health AttributeChangedDelegate
+
 
 public:
+
+	TWeakObjectPtr<UStaticMeshComponent> GetTowerHead();
 	//Begin Health Attribute Getter
 	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Health")
 	float GetHealth() const;
@@ -294,19 +298,11 @@ public:
 	float GetMaxHealth() const;
 	//End Health Attribute Getter
 
-	//Begin Ammo Attribute Getter
-	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Ammo")
-	float GetAmmo() const;
-	UFUNCTION(BlueprintCallable, Category = "Tankster|AbilitySystem|AttributeSet|Ammo")
-	float GetMaxAmmo() const;
-	//End Ammo Attribute Getter
-
 	//Begin IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//End IAbilitySystemInterface
 
 	TWeakObjectPtr<UHealthAttributeSet> GetHealthAttributeSet() const;
-	TWeakObjectPtr<UAmmoAttributeSet> GetAmmoAttributeSet() const;
 private:
 	void UpdateTargeting(const float DeltaTime);
 	/**

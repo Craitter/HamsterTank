@@ -21,7 +21,9 @@ enum class ETanksterAbilityActivationPolicy : uint8
 	WhileInputActive,
 
 	// Try to activate the ability when an avatar is assigned.
-	OnSpawn
+	OnSpawn,
+
+	ByEvent
 };
 UCLASS()
 class HAMSTERTANK_API UTanksterGameplayAbility : public UGameplayAbility
